@@ -1,3 +1,3 @@
-export const EMAILJS_SERVICE_ID  = 'service_75h0kgl'
-export const EMAILJS_TEMPLATE_ID = 'yefu0y5'
-export const EMAILJS_PUBLIC_KEY  = 'LBOOXUIRSCYHLA3eR'
+export const EMAILJS_SERVICE_ID  = process.env.REACT_APP_EMAILJS_SERVICE_ID
+export const EMAILJS_TEMPLATE_ID = process.env.REACT_APP_EMAILJS_TEMPLATE_ID
+export const EMAILJS_PUBLIC_KEY  = process.env.REACT_APP_EMAILJS_PUBLIC_KEY
