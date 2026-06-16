@@ -23,9 +23,10 @@ import Empresas from './pages/Empresas'
 import Categorias from './pages/Categorias'
 import CentroCusto from './pages/CentroCusto'
 import Usuarios from './pages/Usuarios'
+import Configuracoes from './pages/Configuracoes'
 import Placeholder from './pages/Placeholder'
 
-const PLACEHOLDER_PAGES = ['fornecedores', 'clientes', 'configuracoes', 'scanner']
+const PLACEHOLDER_PAGES = ['fornecedores', 'clientes', 'scanner']
 
 export default function App() {
   const [usuario, setUsuario] = useState(null)
@@ -171,6 +172,7 @@ export default function App() {
       case 'categorias': return <Categorias {...sharedProps} />
       case 'centro_custo': return <CentroCusto {...sharedProps} />
       case 'usuarios': return <Usuarios usuario={usuario} />
+      case 'configuracoes': return <Configuracoes usuario={usuario} onLogout={handleLogout} />
       default: return <Placeholder page={page} />
     }
   }
