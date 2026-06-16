@@ -21,7 +21,11 @@ const MOCK = [
 ]
 
 function load() {
-  try { return JSON.parse(localStorage.getItem('x8_notifs') || 'null') || MOCK } catch { return MOCK }
+  try {
+    const stored = localStorage.getItem('x8_notifs')
+    if (stored === null) return localStorage.getItem('x8_data_reset') === '1' ? [] : MOCK
+    return JSON.parse(stored) || []
+  } catch { return [] }
 }
 
 const Ctx = createContext()
@@ -51,10 +55,15 @@ export function NotifProvider({ children }) {
     persist(prev => prev.filter(n => !n.lida))
   }, [])
 
+  const limparTudo = useCallback(() => {
+    setNotifs([])
+    localStorage.setItem('x8_notifs', '[]')
+  }, [])
+
   const unreadCount = useMemo(() => notifs.filter(n => !n.lida).length, [notifs])
 
   return (
-    <Ctx.Provider value={{ notifs, unreadCount, marcarLida, marcarTodasLidas, remover, limparLidas }}>
+    <Ctx.Provider value={{ notifs, unreadCount, marcarLida, marcarTodasLidas, remover, limparLidas, limparTudo }}>
       {children}
     </Ctx.Provider>
   )

@@ -83,6 +83,16 @@ export const deleteMeta = async (id) => {
   if (error) throw error
 }
 
+export const deleteAllLancamentos = async (userId) => {
+  const { error } = await supabase.from('lancamentos').delete().eq('user_id', userId)
+  if (error) throw error
+}
+
+export const deleteAllMetas = async (userId) => {
+  const { error } = await supabase.from('metas').delete().eq('user_id', userId)
+  if (error) throw error
+}
+
 export const signIn = async (email, senha) => {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password: senha })
   if (error) throw error

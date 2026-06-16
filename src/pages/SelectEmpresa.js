@@ -412,7 +412,8 @@ export default function SelectEmpresa({ usuario, onSelect, data, onLogout, onNov
 
   const getStats = (emp) => {
     const lancs = data[emp.id]?.lancamentos || []
-    if (!lancs.length) return MOCK_STATS[emp.id] || { saldo: 0, rec: 0, desp: 0 }
+    const wasReset = localStorage.getItem('x8_data_reset') === '1'
+    if (!lancs.length) return wasReset ? { saldo: 0, rec: 0, desp: 0 } : (MOCK_STATS[emp.id] || { saldo: 0, rec: 0, desp: 0 })
     const rec = lancs.filter(l => l.tipo === 'receita').reduce((s, l) => s + l.valor, 0)
     const desp = lancs.filter(l => l.tipo === 'despesa').reduce((s, l) => s + l.valor, 0)
     return { rec, desp, saldo: rec - desp }

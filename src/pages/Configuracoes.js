@@ -3,6 +3,7 @@ import { T } from '../theme'
 import { Card, Btn, Input } from '../components/ui'
 import { EMPRESAS } from '../data'
 import { supabase } from '../supabase'
+import { useNotif } from '../context/NotifContext'
 
 const CARGOS = ['CEO / Administrador Master', 'Proprietário', 'Diretor', 'Gerente Financeiro', 'Contador', 'Analista', 'Assistente']
 const PERMISSOES_LISTA = ['Dashboard', 'Empresas', 'Receitas', 'Despesas', 'Metas Financeiras', 'Relatórios', 'Categorias', 'Centro de Custos', 'Usuários', 'Configurações', 'Logs do Sistema']
@@ -59,8 +60,9 @@ const Overlay = ({ children, onClose }) => (
   </div>
 )
 
-export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpdate, setPage }) {
+export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpdate, setPage, onReset }) {
   const fotoRef = useRef(null)
+  const { limparTudo } = useNotif()
   const savedPerfil = JSON.parse(localStorage.getItem('x8_perfil') || '{}')
 
   const [foto, setFoto] = useState(localStorage.getItem('x8_foto') || '')
@@ -75,6 +77,10 @@ export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpda
   const [toast, setToast] = useState('')
   const [toastOk, setToastOk] = useState(true)
   const [confirmLogout, setConfirmLogout] = useState(false)
+  const [confirmReset, setConfirmReset] = useState(false)
+  const [resetLoading, setResetLoading] = useState(false)
+
+  const wasReset = localStorage.getItem('x8_data_reset') === '1'
 
   const [senhaModal, setSenhaModal] = useState(false)
   const [senhaAtual, setSenhaAtual] = useState('')
@@ -106,6 +112,20 @@ export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpda
   const showToast = (msg, ok = true) => {
     setToast(msg); setToastOk(ok)
     setTimeout(() => setToast(''), 3500)
+  }
+
+  const handleResetClick = async () => {
+    setResetLoading(true)
+    try {
+      if (onReset) await onReset()
+      limparTudo()
+      setConfirmReset(false)
+      showToast('Sistema limpo! Pronto para dados reais.')
+    } catch {
+      showToast('Erro ao resetar. Tente novamente.', false)
+    } finally {
+      setResetLoading(false)
+    }
   }
 
   const handleFoto = (e) => {
@@ -186,7 +206,8 @@ export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpda
   const isMaster = cargo === 'CEO / Administrador Master'
   const empVinculadas = EMPRESAS.filter(e => empSelecionadas.includes(e.id))
   const empresasFiltradas = EMPRESAS.filter(e => e.nome.toLowerCase().includes(empSearch.toLowerCase()))
-  const histFiltrado = HIST_COMPLETO.filter(a => {
+  const atividades = wasReset ? [] : ATIVIDADES
+  const histFiltrado = (wasReset ? [] : HIST_COMPLETO).filter(a => {
     if (histFiltro.tipo !== 'Todos' && a.tipo !== histFiltro.tipo) return false
     if (histFiltro.empresa !== 'Todas' && a.empresa !== histFiltro.empresa) return false
     return true
@@ -412,8 +433,12 @@ export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpda
           </div>
           <button onClick={() => setHistModal(true)} style={{ background: 'none', border: 'none', color: T.primary, fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Ver todas →</button>
         </div>
-        {ATIVIDADES.map((a, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 0', borderBottom: i < ATIVIDADES.length - 1 ? `1px solid ${T.borderLight}` : 'none' }}>
+        {atividades.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '32px 0', color: T.muted, fontSize: 13 }}>
+            Nenhuma atividade registrada ainda.
+          </div>
+        ) : atividades.map((a, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 0', borderBottom: i < atividades.length - 1 ? `1px solid ${T.borderLight}` : 'none' }}>
             <div style={{ width: 40, height: 40, borderRadius: '50%', background: a.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, color: a.cor, fontWeight: 700, flexShrink: 0 }}>{a.icon}</div>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2 }}>{a.titulo}</div>
@@ -428,6 +453,37 @@ export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpda
         <button onClick={() => setHistModal(true)} style={{ width: '100%', marginTop: 16, border: `1px solid ${T.border}`, borderRadius: 10, padding: 10, background: 'transparent', color: T.sub, fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
           Ver histórico completo
         </button>
+      </Card>
+
+      {/* Zona de Perigo */}
+      <Card style={{ padding: '24px 28px', marginBottom: 20, border: `1.5px solid #fee2e2` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: `1px solid #fecaca` }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15 }}>⚠️</div>
+          <span style={{ fontWeight: 700, fontSize: 16, color: T.red }}>Zona de Perigo</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 14, color: T.text, marginBottom: 4 }}>Resetar dados demonstrativos</div>
+            <div style={{ color: T.sub, fontSize: 13, maxWidth: 520, lineHeight: 1.5 }}>
+              Remove todos os lançamentos, metas e notificações de teste.
+              Mantém sua conta, empresas, permissões e configurações.
+              Esta ação <strong>não pode ser desfeita</strong>.
+            </div>
+          </div>
+          <button
+            onClick={() => setConfirmReset(true)}
+            style={{ background: T.white, border: `1.5px solid ${T.red}`, borderRadius: 8, padding: '9px 20px', color: T.red, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0 }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#fee2e2' }}
+            onMouseLeave={e => { e.currentTarget.style.background = T.white }}
+          >
+            🗑 Resetar dados
+          </button>
+        </div>
+        {wasReset && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 16, padding: '10px 14px', background: T.greenL, borderRadius: 8, color: T.green, fontSize: 13, fontWeight: 600 }}>
+            <span>✓</span> Sistema limpo — nenhum dado de demonstração ativo.
+          </div>
+        )}
       </Card>
 
       {/* Footer */}
@@ -555,6 +611,43 @@ export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpda
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <Btn variant="ghost" onClick={() => setEmpModal(false)}>Cancelar</Btn>
               <Btn onClick={salvarEmpresas}>Salvar vínculos</Btn>
+            </div>
+          </div>
+        </Overlay>
+      )}
+
+      {/* ── MODAL: CONFIRMAR RESET ── */}
+      {confirmReset && (
+        <Overlay onClose={() => !resetLoading && setConfirmReset(false)}>
+          <div style={{ background: T.white, borderRadius: 16, padding: 32, width: '100%', maxWidth: 460, boxShadow: T.shadowLg, textAlign: 'center' }}>
+            <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, margin: '0 auto 16px' }}>⚠️</div>
+            <div style={{ fontWeight: 800, fontSize: 20, color: T.text, marginBottom: 8 }}>Resetar dados demonstrativos?</div>
+            <div style={{ color: T.sub, fontSize: 14, marginBottom: 20 }}>Confirme o que será apagado e o que será mantido:</div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 28, textAlign: 'left' }}>
+              <div style={{ background: '#fff5f5', border: '1px solid #fecaca', borderRadius: 10, padding: '14px 16px' }}>
+                <div style={{ fontWeight: 700, fontSize: 12, color: T.red, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.4 }}>Será apagado</div>
+                {['Receitas e despesas', 'Metas financeiras', 'Notificações', 'Histórico de atividades', 'Dados dos dashboards'].map(item => (
+                  <div key={item} style={{ display: 'flex', gap: 7, marginBottom: 7, fontSize: 12, color: T.red }}>
+                    <span style={{ fontWeight: 800, flexShrink: 0 }}>✕</span> {item}
+                  </div>
+                ))}
+              </div>
+              <div style={{ background: T.greenL, border: `1px solid ${T.primary}22`, borderRadius: 10, padding: '14px 16px' }}>
+                <div style={{ fontWeight: 700, fontSize: 12, color: T.green, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.4 }}>Será mantido</div>
+                {['Login e acesso', 'Usuário master', 'Empresas', 'Permissões', 'Configurações e layout'].map(item => (
+                  <div key={item} style={{ display: 'flex', gap: 7, marginBottom: 7, fontSize: 12, color: T.green }}>
+                    <span style={{ fontWeight: 800, flexShrink: 0 }}>✓</span> {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+              <Btn variant="ghost" onClick={() => setConfirmReset(false)} disabled={resetLoading}>Cancelar</Btn>
+              <Btn variant="danger" onClick={handleResetClick} disabled={resetLoading}>
+                {resetLoading ? '⏳ Resetando...' : '🗑 Confirmar reset'}
+              </Btn>
             </div>
           </div>
         </Overlay>

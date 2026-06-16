@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { T } from './theme'
 import { initData, EMPRESAS } from './data'
-import { supabase, getLancamentos, saveLancamento, deleteLancamento, saveLancamentos, getMetas, saveMeta, deleteMeta, signIn, signOut } from './supabase'
+import { supabase, getLancamentos, saveLancamento, deleteLancamento, saveLancamentos, getMetas, saveMeta, deleteMeta, signIn, signOut, deleteAllLancamentos, deleteAllMetas } from './supabase'
 
 import Sidebar from './components/Sidebar'
 import TopBar from './components/TopBar'
@@ -140,6 +140,17 @@ export default function App() {
     setAppData(prev => ({ ...prev, [empresa.id]: { ...prev[empresa.id], mesFechado: false } }))
   }, [empresa])
 
+  const handleReset = useCallback(async () => {
+    if (usuario) {
+      await deleteAllLancamentos(usuario.id)
+      await deleteAllMetas(usuario.id)
+    }
+    localStorage.removeItem('x8_notifs')
+    localStorage.removeItem('x8_ultimas')
+    localStorage.setItem('x8_data_reset', '1')
+    setAppData(initData())
+  }, [usuario])
+
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: T.sidebar, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -187,7 +198,7 @@ export default function App() {
       case 'categorias': return <Categorias {...sharedProps} />
       case 'centro_custo': return <CentroCusto {...sharedProps} />
       case 'usuarios': return <Usuarios usuario={usuario} />
-      case 'configuracoes': return <Configuracoes usuario={usuario} onLogout={handleLogout} empresa={empresa} onPerfilUpdate={handlePerfilUpdate} setPage={setPage} />
+      case 'configuracoes': return <Configuracoes usuario={usuario} onLogout={handleLogout} empresa={empresa} onPerfilUpdate={handlePerfilUpdate} setPage={setPage} onReset={handleReset} />
       case 'notificacoes': return <Notificacoes setPage={setPage} />
       default: return <Placeholder page={page} />
     }
