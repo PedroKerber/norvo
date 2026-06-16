@@ -15,9 +15,10 @@ import FluxoCaixa from './pages/FluxoCaixa'
 import ContasPagar from './pages/ContasPagar'
 import ContasReceber from './pages/ContasReceber'
 import MesFechado from './pages/MesFechado'
+import Metas from './pages/Metas'
 import Placeholder from './pages/Placeholder'
 
-const PLACEHOLDER_PAGES = ['relatorios', 'empresas', 'categorias', 'centro_custo', 'fornecedores', 'clientes', 'metas', 'configuracoes', 'scanner']
+const PLACEHOLDER_PAGES = ['relatorios', 'empresas', 'categorias', 'centro_custo', 'fornecedores', 'clientes', 'configuracoes', 'scanner']
 
 export default function App() {
   const [usuario, setUsuario] = useState(null)
@@ -27,21 +28,29 @@ export default function App() {
 
   const empData = empresa ? (appData[empresa.id] || { lancamentos: [], metas: [] }) : { lancamentos: [], metas: [] }
 
-  const handleSave = useCallback((item, isEdit) => {
+  const handleSave = useCallback((item, isEdit, tipo) => {
     setAppData(prev => {
-      const empId = item.empId
+      const empId = item.empId || empresa?.id
+      if (tipo === 'meta') {
+        const metas = prev[empId]?.metas || []
+        const updated = isEdit ? metas.map(m => m.id === item.id ? item : m) : [...metas, item]
+        return { ...prev, [empId]: { ...prev[empId], metas: updated } }
+      }
       const lancs = prev[empId]?.lancamentos || []
       const updated = isEdit
         ? lancs.map(l => l.id === item.id ? item : l)
         : [...lancs, item]
       return { ...prev, [empId]: { ...prev[empId], lancamentos: updated } }
     })
-  }, [])
+  }, [empresa])
 
-  const handleDelete = useCallback((id) => {
+  const handleDelete = useCallback((id, tipo) => {
     if (!empresa) return
     setAppData(prev => {
       const empId = empresa.id
+      if (tipo === 'meta') {
+        return { ...prev, [empId]: { ...prev[empId], metas: (prev[empId]?.metas || []).filter(m => m.id !== id) } }
+      }
       return {
         ...prev,
         [empId]: {
@@ -87,6 +96,7 @@ export default function App() {
       case 'contas_pagar': return <ContasPagar {...sharedProps} />
       case 'contas_receber': return <ContasReceber {...sharedProps} />
       case 'mes_fechado': return <MesFechado {...sharedProps} onFechar={handleFecharMes} />
+      case 'metas': return <Metas {...sharedProps} />
       default: return <Placeholder page={page} />
     }
   }
