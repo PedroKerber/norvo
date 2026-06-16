@@ -34,6 +34,7 @@ export default function App() {
   const [page, setPage] = useState('dashboard')
   const [appData, setAppData] = useState(() => initData())
   const [loading, setLoading] = useState(true)
+  const [perfilFoto, setPerfilFoto] = useState(() => localStorage.getItem('x8_foto') || '')
 
   // Verifica sessão ao carregar
   useEffect(() => {
@@ -72,6 +73,10 @@ export default function App() {
   const handleLogin = useCallback(async (email, senha) => {
     const user = await signIn(email, senha)
     setUsuario({ id: user.id, email: user.email, nome: user.email.split('@')[0] })
+  }, [])
+
+  const handlePerfilUpdate = useCallback(() => {
+    setPerfilFoto(localStorage.getItem('x8_foto') || '')
   }, [])
 
   const handleLogout = useCallback(async () => {
@@ -172,14 +177,14 @@ export default function App() {
       case 'categorias': return <Categorias {...sharedProps} />
       case 'centro_custo': return <CentroCusto {...sharedProps} />
       case 'usuarios': return <Usuarios usuario={usuario} />
-      case 'configuracoes': return <Configuracoes usuario={usuario} onLogout={handleLogout} empresa={empresa} />
+      case 'configuracoes': return <Configuracoes usuario={usuario} onLogout={handleLogout} empresa={empresa} onPerfilUpdate={handlePerfilUpdate} />
       default: return <Placeholder page={page} />
     }
   }
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: T.bg, fontFamily: "'Segoe UI', sans-serif" }}>
-      <Sidebar page={page} setPage={setPage} />
+      <Sidebar page={page} setPage={setPage} usuario={usuario} perfilFoto={perfilFoto} onLogout={handleLogout} />
       <div style={{ marginLeft: 240, flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh', minWidth: 0 }}>
         <TopBar
           empresa={empresa}
