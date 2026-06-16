@@ -7,11 +7,28 @@ import { supabase } from '../supabase'
 const CARGOS = ['CEO / Administrador Master', 'Proprietário', 'Diretor', 'Gerente Financeiro', 'Contador', 'Analista', 'Assistente']
 const PERMISSOES_LISTA = ['Dashboard', 'Empresas', 'Receitas', 'Despesas', 'Metas Financeiras', 'Relatórios', 'Categorias', 'Centro de Custos', 'Usuários', 'Configurações', 'Logs do Sistema']
 const ACOES_PERM = ['Visualizar', 'Criar', 'Editar', 'Excluir', 'Exportar']
+const TIPOS_HIST = ['Login', 'Logout', 'Financeiro', 'Relatório', 'Usuário', 'Segurança', 'Permissões', 'Empresa', 'Perfil']
+
 const ATIVIDADES = [
   { cor: T.green, bg: T.greenL, icon: '＋', titulo: 'Cadastro de despesa', desc: 'Despesa de material de escritório', data: 'Hoje', hora: '14:12' },
   { cor: T.blue, bg: T.blueL, icon: '↑', titulo: 'Aprovação de receita', desc: 'Receita de aluguel - Sala 101', data: 'Hoje', hora: '11:43' },
   { cor: T.purple, bg: T.purpleL, icon: '≡', titulo: 'Geração de relatório financeiro', desc: 'Relatório Mensal - Mai/2026', data: 'Ontem', hora: '17:58' },
   { cor: T.orange, bg: T.orangeL, icon: '👤', titulo: 'Cadastro de usuário', desc: 'Novo usuário: Ana Beatriz', data: 'Ontem', hora: '16:22' },
+]
+
+const HIST_COMPLETO = [
+  { cor: T.green, bg: T.greenL, icon: '🔑', tipo: 'Login', desc: 'Login realizado', empresa: 'Sistema', data: '16/06/2026', hora: '14:37' },
+  { cor: T.blue, bg: T.blueL, icon: '＋', tipo: 'Financeiro', desc: 'Cadastro de despesa: Material de escritório', empresa: 'Kazole Imobiliária', data: '16/06/2026', hora: '14:12' },
+  { cor: T.blue, bg: T.blueL, icon: '↑', tipo: 'Financeiro', desc: 'Aprovação de receita: Aluguel Sala 101', empresa: 'Kazole Imobiliária', data: '16/06/2026', hora: '11:43' },
+  { cor: T.purple, bg: T.purpleL, icon: '≡', tipo: 'Relatório', desc: 'Geração de relatório: Mensal - Mai/2026', empresa: 'Kazole Imobiliária', data: '15/06/2026', hora: '17:58' },
+  { cor: T.orange, bg: T.orangeL, icon: '👤', tipo: 'Usuário', desc: 'Cadastro de usuário: Ana Beatriz', empresa: 'AxionZ Marketing', data: '15/06/2026', hora: '16:22' },
+  { cor: T.red, bg: T.redL, icon: '🔒', tipo: 'Segurança', desc: 'Alteração de senha realizada', empresa: 'Sistema', data: '15/06/2026', hora: '10:05' },
+  { cor: T.purple, bg: T.purpleL, icon: '🛡', tipo: 'Permissões', desc: 'Permissões de acesso atualizadas', empresa: 'Sistema', data: '14/06/2026', hora: '15:30' },
+  { cor: T.blue, bg: T.blueL, icon: '🏢', tipo: 'Empresa', desc: 'Empresa vinculada: K2 Imob', empresa: 'Sistema', data: '14/06/2026', hora: '09:15' },
+  { cor: T.green, bg: T.greenL, icon: '📷', tipo: 'Perfil', desc: 'Foto de perfil atualizada', empresa: 'Sistema', data: '13/06/2026', hora: '16:45' },
+  { cor: T.red, bg: T.redL, icon: '🚪', tipo: 'Logout', desc: 'Logout realizado', empresa: 'Sistema', data: '13/06/2026', hora: '18:00' },
+  { cor: T.green, bg: T.greenL, icon: '🔑', tipo: 'Login', desc: 'Login realizado', empresa: 'Sistema', data: '13/06/2026', hora: '09:00' },
+  { cor: T.blue, bg: T.blueL, icon: '↓', tipo: 'Financeiro', desc: 'Lançamento de despesa: Aluguel Escritório', empresa: 'Kazole Imobiliária', data: '12/06/2026', hora: '11:20' },
 ]
 
 const masterPerms = () => Object.fromEntries(
@@ -42,25 +59,23 @@ const Overlay = ({ children, onClose }) => (
   </div>
 )
 
-export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpdate }) {
+export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpdate, setPage }) {
   const fotoRef = useRef(null)
   const savedPerfil = JSON.parse(localStorage.getItem('x8_perfil') || '{}')
 
-  // Perfil
   const [foto, setFoto] = useState(localStorage.getItem('x8_foto') || '')
   const [nome, setNome] = useState(savedPerfil.nome || 'Pedro Felipe Ramos Kerber')
   const [cargo, setCargo] = useState(savedPerfil.cargo || 'CEO / Administrador Master')
   const [telefone, setTelefone] = useState(savedPerfil.telefone || '(61) 99999-9999')
-  const [cpf, setCpf] = useState(savedPerfil.cpf || '•••.•••.•••-••')
+  const [cpf, setCpf] = useState(savedPerfil.cpf || '')
+  const [showCpf, setShowCpf] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  // Toast
   const [toast, setToast] = useState('')
   const [toastOk, setToastOk] = useState(true)
   const [confirmLogout, setConfirmLogout] = useState(false)
 
-  // Senha modal
   const [senhaModal, setSenhaModal] = useState(false)
   const [senhaAtual, setSenhaAtual] = useState('')
   const [senhaNova, setSenhaNova] = useState('')
@@ -69,14 +84,12 @@ export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpda
   const [senhaLoading, setSenhaLoading] = useState(false)
   const [senhaErro, setSenhaErro] = useState('')
 
-  // Permissões modal
   const [permModal, setPermModal] = useState(false)
   const [perms, setPerms] = useState(() => {
     const s = localStorage.getItem('x8_perms')
     return s ? JSON.parse(s) : masterPerms()
   })
 
-  // Empresas modal
   const [empModal, setEmpModal] = useState(false)
   const [empSearch, setEmpSearch] = useState('')
   const [empSelecionadas, setEmpSelecionadas] = useState(() => {
@@ -86,6 +99,9 @@ export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpda
   const [empPrincipal, setEmpPrincipal] = useState(() =>
     localStorage.getItem('x8_emp_principal') || (EMPRESAS[0]?.id || '')
   )
+
+  const [histModal, setHistModal] = useState(false)
+  const [histFiltro, setHistFiltro] = useState({ tipo: 'Todos', empresa: 'Todas' })
 
   const showToast = (msg, ok = true) => {
     setToast(msg); setToastOk(ok)
@@ -114,8 +130,8 @@ export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpda
     onPerfilUpdate && onPerfilUpdate()
     await new Promise(r => setTimeout(r, 700))
     setSaving(false)
-    setEditMode(false)
     showToast('Perfil atualizado com sucesso!')
+    setTimeout(() => setPage && setPage('dashboard'), 1500)
   }
 
   const alterarSenha = async () => {
@@ -149,7 +165,6 @@ export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpda
   }
 
   const togglePerm = (modulo, acao) => {
-    if (isMaster) return
     setPerms(p => ({ ...p, [modulo]: { ...p[modulo], [acao]: !p[modulo][acao] } }))
   }
 
@@ -171,6 +186,11 @@ export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpda
   const isMaster = cargo === 'CEO / Administrador Master'
   const empVinculadas = EMPRESAS.filter(e => empSelecionadas.includes(e.id))
   const empresasFiltradas = EMPRESAS.filter(e => e.nome.toLowerCase().includes(empSearch.toLowerCase()))
+  const histFiltrado = HIST_COMPLETO.filter(a => {
+    if (histFiltro.tipo !== 'Todos' && a.tipo !== histFiltro.tipo) return false
+    if (histFiltro.empresa !== 'Todas' && a.empresa !== histFiltro.empresa) return false
+    return true
+  })
 
   const PwInput = ({ label, val, setVal, campo }) => (
     <div style={{ marginBottom: 14 }}>
@@ -194,9 +214,18 @@ export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpda
       <input ref={fotoRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} onChange={handleFoto} />
 
       {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontWeight: 800, fontSize: 26, margin: '0 0 4px' }}>Meu Perfil</h1>
-        <div style={{ color: T.sub, fontSize: 14 }}>Gerencie suas informações pessoais e permissões de acesso.</div>
+      <div style={{ marginBottom: 28, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div>
+          <h1 style={{ fontWeight: 800, fontSize: 26, margin: '0 0 4px' }}>Meu Perfil</h1>
+          <div style={{ color: T.sub, fontSize: 14 }}>Gerencie suas informações pessoais e permissões de acesso.</div>
+        </div>
+        <button
+          onClick={() => setPage && setPage('dashboard')}
+          title="Fechar e voltar ao Dashboard"
+          style={{ width: 36, height: 36, borderRadius: '50%', background: T.bg, border: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, cursor: 'pointer', color: T.muted, flexShrink: 0, marginTop: 4 }}
+          onMouseEnter={e => { e.currentTarget.style.background = T.border }}
+          onMouseLeave={e => { e.currentTarget.style.background = T.bg }}
+        >✕</button>
       </div>
 
       {/* Card principal */}
@@ -267,7 +296,23 @@ export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpda
                 </select>
               </div>
               <Input label="Telefone" value={telefone} onChange={e => setTelefone(e.target.value)} placeholder="(61) 99999-9999" />
-              <Input label="CPF" value={cpf} onChange={e => setCpf(e.target.value)} placeholder="000.000.000-00" />
+              <div>
+                <label style={{ display: 'block', fontWeight: 600, fontSize: 13, color: T.text, marginBottom: 5 }}>CPF</label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    value={showCpf ? cpf : '•••.•••.•••-••'}
+                    onChange={e => setCpf(e.target.value)}
+                    placeholder="000.000.000-00"
+                    readOnly={!showCpf}
+                    style={{ width: '100%', border: `1.5px solid ${T.border}`, borderRadius: 8, padding: '9px 40px 9px 12px', fontSize: 14, fontFamily: 'inherit', outline: 'none', color: T.text, background: showCpf ? T.white : T.bg, boxSizing: 'border-box', cursor: showCpf ? 'text' : 'default' }}
+                  />
+                  <button type="button" onClick={() => setShowCpf(s => !s)}
+                    style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: T.muted, fontSize: 16 }}>
+                    {showCpf ? '🙈' : '👁'}
+                  </button>
+                </div>
+              </div>
               <label style={{ display: 'block', fontWeight: 600, fontSize: 13, color: T.text, marginBottom: 5, marginTop: 4 }}>E-mail</label>
               <input value={email} readOnly style={{ width: '100%', background: T.bg, border: `1.5px solid ${T.border}`, borderRadius: 8, padding: '9px 12px', color: T.muted, fontSize: 14, fontFamily: 'inherit', boxSizing: 'border-box', cursor: 'not-allowed' }} />
             </div>
@@ -277,7 +322,17 @@ export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpda
               <InfoRow icon="✉" label="E-mail" value={email} />
               <InfoRow icon="📱" label="Telefone" value={telefone} />
               <InfoRow icon="💼" label="Cargo" value={cargo} />
-              <InfoRow icon="🪪" label="CPF" value={cpf} />
+              {/* CPF com toggle de visibilidade */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 0', borderBottom: `1px solid ${T.borderLight}` }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: T.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🪪</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ color: T.muted, fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: .5, marginBottom: 2 }}>CPF</div>
+                  <div style={{ fontWeight: 600, fontSize: 14, color: T.text }}>{showCpf ? (cpf || '—') : '•••.•••.•••-••'}</div>
+                </div>
+                <button onClick={() => setShowCpf(s => !s)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.muted, fontSize: 16, padding: 4, flexShrink: 0 }}>
+                  {showCpf ? '🙈' : '👁'}
+                </button>
+              </div>
               <InfoRow icon="📅" label="Data de Cadastro" value="10/06/2026" />
             </div>
           )}
@@ -288,8 +343,8 @@ export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpda
           <SectionTitle icon="🛡" title="Permissões de Acesso" />
           <div style={{ background: `linear-gradient(135deg, ${T.purpleL}, #ede9fe)`, borderRadius: 12, padding: '14px 18px', marginBottom: 18, border: `1px solid ${T.purple}22` }}>
             <div style={{ color: T.muted, fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: .5, marginBottom: 2 }}>Nível de Acesso</div>
-            <div style={{ fontWeight: 800, fontSize: 20, color: T.purple, marginBottom: 2 }}>MASTER</div>
-            <div style={{ color: T.sub, fontSize: 12 }}>Possui acesso total ao sistema.</div>
+            <div style={{ fontWeight: 800, fontSize: 20, color: T.purple, marginBottom: 2 }}>{isMaster ? 'MASTER' : 'PERSONALIZADO'}</div>
+            <div style={{ color: T.sub, fontSize: 12 }}>{isMaster ? 'Possui acesso total ao sistema.' : 'Permissões configuradas manualmente.'}</div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 8px', marginBottom: 18 }}>
             {PERMISSOES_LISTA.map(p => (
@@ -355,7 +410,7 @@ export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpda
             <div style={{ width: 32, height: 32, borderRadius: 8, background: T.primaryLight, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, color: T.primary }}>🕐</div>
             <span style={{ fontWeight: 700, fontSize: 16 }}>Histórico de Atividades</span>
           </div>
-          <button style={{ background: 'none', border: 'none', color: T.primary, fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Ver todas →</button>
+          <button onClick={() => setHistModal(true)} style={{ background: 'none', border: 'none', color: T.primary, fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Ver todas →</button>
         </div>
         {ATIVIDADES.map((a, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 0', borderBottom: i < ATIVIDADES.length - 1 ? `1px solid ${T.borderLight}` : 'none' }}>
@@ -370,7 +425,7 @@ export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpda
             </div>
           </div>
         ))}
-        <button style={{ width: '100%', marginTop: 16, border: `1px solid ${T.border}`, borderRadius: 10, padding: 10, background: 'transparent', color: T.sub, fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
+        <button onClick={() => setHistModal(true)} style={{ width: '100%', marginTop: 16, border: `1px solid ${T.border}`, borderRadius: 10, padding: 10, background: 'transparent', color: T.sub, fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
           Ver histórico completo
         </button>
       </Card>
@@ -404,15 +459,12 @@ export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpda
           <div style={{ background: T.white, borderRadius: 16, padding: 32, width: '100%', maxWidth: 420, boxShadow: T.shadowLg }}>
             <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 6 }}>🔒 Alterar Senha</div>
             <div style={{ color: T.sub, fontSize: 13, marginBottom: 24 }}>A nova senha precisa ter no mínimo 8 caracteres.</div>
-
             <PwInput label="Senha atual" val={senhaAtual} setVal={setSenhaAtual} campo="atual" />
             <PwInput label="Nova senha" val={senhaNova} setVal={setSenhaNova} campo="nova" />
             <PwInput label="Confirmar nova senha" val={senhaConfirm} setVal={setSenhaConfirm} campo="confirm" />
-
             {senhaErro && (
               <div style={{ background: T.redL, color: T.red, borderRadius: 8, padding: '10px 14px', fontSize: 13, fontWeight: 600, marginBottom: 16 }}>{senhaErro}</div>
             )}
-
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
               <Btn variant="ghost" onClick={fecharSenhaModal}>Cancelar</Btn>
               <Btn onClick={alterarSenha} disabled={senhaLoading}>
@@ -429,9 +481,8 @@ export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpda
           <div style={{ background: T.white, borderRadius: 16, padding: 32, width: '100%', maxWidth: 780, maxHeight: '90vh', overflowY: 'auto', boxShadow: T.shadowLg }}>
             <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 4 }}>🛡 Permissões Avançadas</div>
             <div style={{ color: T.sub, fontSize: 13, marginBottom: 24 }}>
-              {isMaster ? 'Perfil Master: acesso total ao sistema. Permissões não podem ser alteradas.' : 'Defina o nível de acesso para cada módulo.'}
+              {isMaster ? 'Perfil Master: acesso total. Você pode ajustar permissões manualmente.' : 'Defina o nível de acesso para cada módulo.'}
             </div>
-
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
@@ -452,8 +503,7 @@ export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpda
                             type="checkbox"
                             checked={perms[modulo]?.[acao] || false}
                             onChange={() => togglePerm(modulo, acao)}
-                            disabled={isMaster}
-                            style={{ width: 16, height: 16, cursor: isMaster ? 'not-allowed' : 'pointer', accentColor: T.primary }}
+                            style={{ width: 16, height: 16, cursor: 'pointer', accentColor: T.primary }}
                           />
                         </td>
                       ))}
@@ -462,7 +512,6 @@ export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpda
                 </tbody>
               </table>
             </div>
-
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 24 }}>
               <Btn variant="ghost" onClick={() => setPermModal(false)}>Cancelar</Btn>
               <Btn onClick={salvarPerms}>Salvar permissões</Btn>
@@ -476,13 +525,11 @@ export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpda
         <Overlay onClose={() => setEmpModal(false)}>
           <div style={{ background: T.white, borderRadius: 16, padding: 32, width: '100%', maxWidth: 480, maxHeight: '90vh', overflowY: 'auto', boxShadow: T.shadowLg }}>
             <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 20 }}>🏢 Vincular Empresas</div>
-
             <input
               value={empSearch} onChange={e => setEmpSearch(e.target.value)}
               placeholder="Buscar empresa..."
               style={{ width: '100%', border: `1.5px solid ${T.border}`, borderRadius: 8, padding: '9px 12px', fontSize: 14, fontFamily: 'inherit', outline: 'none', marginBottom: 16, color: T.text, boxSizing: 'border-box' }}
             />
-
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
               {empresasFiltradas.map(emp => {
                 const selecionada = empSelecionadas.includes(emp.id)
@@ -505,10 +552,77 @@ export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpda
                 )
               })}
             </div>
-
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <Btn variant="ghost" onClick={() => setEmpModal(false)}>Cancelar</Btn>
               <Btn onClick={salvarEmpresas}>Salvar vínculos</Btn>
+            </div>
+          </div>
+        </Overlay>
+      )}
+
+      {/* ── MODAL: HISTÓRICO COMPLETO ── */}
+      {histModal && (
+        <Overlay onClose={() => setHistModal(false)}>
+          <div style={{ background: T.white, borderRadius: 16, padding: 32, width: '100%', maxWidth: 680, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: T.shadowLg }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 2 }}>🕐 Histórico Completo</div>
+                <div style={{ color: T.sub, fontSize: 13 }}>{histFiltrado.length} registro{histFiltrado.length !== 1 ? 's' : ''} encontrado{histFiltrado.length !== 1 ? 's' : ''}</div>
+              </div>
+              <button onClick={() => setHistModal(false)} style={{ width: 32, height: 32, borderRadius: '50%', background: T.bg, border: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 14, color: T.muted }}>✕</button>
+            </div>
+
+            {/* Filtros */}
+            <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: 140 }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: T.muted, textTransform: 'uppercase', letterSpacing: .4, marginBottom: 4 }}>Tipo</label>
+                <select value={histFiltro.tipo} onChange={e => setHistFiltro(f => ({ ...f, tipo: e.target.value }))}
+                  style={{ width: '100%', border: `1.5px solid ${T.border}`, borderRadius: 8, padding: '8px 10px', fontSize: 13, fontFamily: 'inherit', outline: 'none', color: T.text, background: T.white }}>
+                  <option>Todos</option>
+                  {TIPOS_HIST.map(t => <option key={t}>{t}</option>)}
+                </select>
+              </div>
+              <div style={{ flex: 1, minWidth: 140 }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: T.muted, textTransform: 'uppercase', letterSpacing: .4, marginBottom: 4 }}>Empresa</label>
+                <select value={histFiltro.empresa} onChange={e => setHistFiltro(f => ({ ...f, empresa: e.target.value }))}
+                  style={{ width: '100%', border: `1.5px solid ${T.border}`, borderRadius: 8, padding: '8px 10px', fontSize: 13, fontFamily: 'inherit', outline: 'none', color: T.text, background: T.white }}>
+                  <option>Todas</option>
+                  <option>Sistema</option>
+                  {EMPRESAS.map(e => <option key={e.id}>{e.nome}</option>)}
+                </select>
+              </div>
+              {(histFiltro.tipo !== 'Todos' || histFiltro.empresa !== 'Todas') && (
+                <button onClick={() => setHistFiltro({ tipo: 'Todos', empresa: 'Todas' })}
+                  style={{ alignSelf: 'flex-end', background: 'none', border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 12px', fontSize: 12, color: T.muted, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
+                  Limpar filtros
+                </button>
+              )}
+            </div>
+
+            {/* Lista */}
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+              {histFiltrado.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: T.muted, fontSize: 14 }}>
+                  Nenhum registro encontrado para os filtros selecionados.
+                </div>
+              ) : (
+                histFiltrado.map((a, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 0', borderBottom: i < histFiltrado.length - 1 ? `1px solid ${T.borderLight}` : 'none' }}>
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: a.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, color: a.cor, fontWeight: 700, flexShrink: 0 }}>{a.icon}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 3 }}>{a.desc}</div>
+                      <div style={{ color: T.sub, fontSize: 12 }}>
+                        <span style={{ background: a.bg, color: a.cor, borderRadius: 6, padding: '1px 7px', fontSize: 11, fontWeight: 700, marginRight: 6 }}>{a.tipo}</span>
+                        {a.empresa}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: 12 }}>{a.data}</div>
+                      <div style={{ color: T.muted, fontSize: 11 }}>{a.hora}</div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </Overlay>

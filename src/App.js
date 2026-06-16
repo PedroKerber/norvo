@@ -177,7 +177,7 @@ export default function App() {
       case 'categorias': return <Categorias {...sharedProps} />
       case 'centro_custo': return <CentroCusto {...sharedProps} />
       case 'usuarios': return <Usuarios usuario={usuario} />
-      case 'configuracoes': return <Configuracoes usuario={usuario} onLogout={handleLogout} empresa={empresa} onPerfilUpdate={handlePerfilUpdate} />
+      case 'configuracoes': return <Configuracoes usuario={usuario} onLogout={handleLogout} empresa={empresa} onPerfilUpdate={handlePerfilUpdate} setPage={setPage} />
       default: return <Placeholder page={page} />
     }
   }
@@ -197,7 +197,7 @@ export default function App() {
           {renderPage()}
         </main>
       </div>
-      <button
+      {page !== 'configuracoes' && <button
         onClick={() => setPage('receitas')}
         title="Nova transação"
         style={{
@@ -209,7 +209,7 @@ export default function App() {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 500,
         }}
-      >+</button>
+      >+</button>}
     </div>
   )
 }

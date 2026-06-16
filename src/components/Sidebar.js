@@ -72,12 +72,12 @@ export default function Sidebar({ page, setPage, open, onClose, usuario, perfilF
         </div>
 
         {/* Nav */}
-        <nav style={{ flex: 1, overflowY: 'auto', padding: '10px 10px 0', scrollbarWidth: 'none' }}>
+        <nav style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '10px 10px 0', scrollbarWidth: 'none' }}>
           {NAV.map(item => <Item key={item.id} item={item} />)}
         </nav>
 
         {/* Bottom */}
-        <div style={{ padding: '12px 14px', borderTop: `1px solid ${T.sidebarActive}` }}>
+        <div style={{ padding: '12px 14px', borderTop: `1px solid ${T.sidebarActive}`, flexShrink: 0 }}>
           <div style={{ marginBottom: 10 }}>
             <div style={{ color: T.sidebarText, fontSize: 11, marginBottom: 4 }}>Central de ajuda</div>
             <div style={{ color: T.primary, fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>Fale com nosso suporte →</div>
