@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { T, fmt, fd } from '../theme'
 import { Card, KpiCard, StatusBadge, SearchInput, Table, Btn } from '../components/ui'
 
-export default function ContasReceber({ data }) {
+export default function ContasReceber({ data, onSave, setPage }) {
   const [search, setSearch] = useState('')
   const [fStatus, setFStatus] = useState('')
   const lancs = (data.lancamentos || []).filter(l => l.tipo === 'receita')
@@ -30,8 +30,13 @@ export default function ContasReceber({ data }) {
     {
       key: 'id', label: 'Ações', render: (_, row) => (
         <div style={{ display: 'flex', gap: 6 }}>
-          {row.status === 'A receber' && <button style={{ background: T.greenL, color: T.green, border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 600, fontFamily: 'inherit' }}>Marcar recebida</button>}
-          <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.sub, fontSize: 13 }}>⋮</button>
+          {row.status !== 'Recebida' && (
+            <button
+              onClick={() => onSave && onSave({ ...row, status: 'Recebida' }, true)}
+              style={{ background: T.greenL, color: T.green, border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 600, fontFamily: 'inherit' }}>
+              Marcar recebida
+            </button>
+          )}
         </div>
       )
     },
@@ -44,7 +49,7 @@ export default function ContasReceber({ data }) {
           <h1 style={{ fontWeight: 800, fontSize: 26, margin: '0 0 4px' }}>Contas a Receber</h1>
           <div style={{ color: T.sub, fontSize: 14 }}>Gerencie os recebíveis da empresa.</div>
         </div>
-        <Btn icon="+">Novo recebível</Btn>
+        <Btn icon="+" onClick={() => setPage && setPage('receitas')}>Novo recebível</Btn>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 22 }}>

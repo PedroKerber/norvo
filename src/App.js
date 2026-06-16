@@ -211,19 +211,6 @@ export default function App() {
           {renderPage()}
         </main>
       </div>
-      {!['configuracoes', 'usuarios'].includes(page) && <button
-        onClick={() => setPage('receitas')}
-        title="Nova transação"
-        style={{
-          position: 'fixed', bottom: 28, right: 28,
-          background: T.primary, color: '#fff', border: 'none',
-          borderRadius: '50%', width: 52, height: 52,
-          fontSize: 26, fontWeight: 700, cursor: 'pointer',
-          boxShadow: '0 4px 16px ' + T.primary + '66',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 500,
-        }}
-      >+</button>}
     </div>
   )
 }

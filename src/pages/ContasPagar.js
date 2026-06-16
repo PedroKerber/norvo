@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { T, fmt, fd } from '../theme'
 import { Card, KpiCard, StatusBadge, SearchInput, Table, Btn } from '../components/ui'
 
-export default function ContasPagar({ data }) {
+export default function ContasPagar({ data, onSave, setPage }) {
   const [search, setSearch] = useState('')
   const [fStatus, setFStatus] = useState('')
   const lancs = (data.lancamentos || []).filter(l => l.tipo === 'despesa')
@@ -31,8 +31,13 @@ export default function ContasPagar({ data }) {
     {
       key: 'id', label: 'Ações', render: (_, row) => (
         <div style={{ display: 'flex', gap: 6 }}>
-          {row.status === 'Pendente' && <button style={{ background: T.greenL, color: T.green, border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 600, fontFamily: 'inherit' }}>Marcar pago</button>}
-          <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.sub, fontSize: 13 }}>⋮</button>
+          {row.status !== 'Pago' && (
+            <button
+              onClick={() => onSave && onSave({ ...row, status: 'Pago' }, true)}
+              style={{ background: T.greenL, color: T.green, border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 600, fontFamily: 'inherit' }}>
+              Marcar pago
+            </button>
+          )}
         </div>
       )
     },
@@ -45,7 +50,7 @@ export default function ContasPagar({ data }) {
           <h1 style={{ fontWeight: 800, fontSize: 26, margin: '0 0 4px' }}>Contas a Pagar</h1>
           <div style={{ color: T.sub, fontSize: 14 }}>Controle de pagamentos e obrigações financeiras.</div>
         </div>
-        <Btn variant="danger" icon="+">Nova conta a pagar</Btn>
+        <Btn variant="danger" icon="+" onClick={() => setPage && setPage('despesas')}>Nova conta a pagar</Btn>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 22 }}>
