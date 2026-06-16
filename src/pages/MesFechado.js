@@ -520,7 +520,11 @@ export default function MesFechado({ empresa, data, onFechar, onReabrir, usuario
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <button onClick={() => navMes(-1)} style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 12px', cursor: 'pointer', color: T.sub, fontFamily: 'inherit', fontSize: 14 }}>‹</button>
-          <div style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 14px', fontSize: 13, color: T.text, fontWeight: 600, minWidth: 110, textAlign: 'center' }}>📅 {mesLabel}</div>
+          <div style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 8, padding: '6px 12px', fontSize: 13, color: T.text, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+            📅
+            <input type="month" value={mesAno} onChange={e => e.target.value && setMesAno(e.target.value)}
+              style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: 13, fontWeight: 600, color: T.text, cursor: 'pointer', fontFamily: 'inherit' }} />
+          </div>
           <button onClick={() => navMes(1)} style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: '8px 12px', cursor: 'pointer', color: T.sub, fontFamily: 'inherit', fontSize: 14 }}>›</button>
           <Btn variant="ghost" icon="↑" onClick={exportPDF}>PDF</Btn>
           <Btn variant="ghost" icon="📊" onClick={exportExcel}>Excel</Btn>
@@ -536,6 +540,18 @@ export default function MesFechado({ empresa, data, onFechar, onReabrir, usuario
       {/* ── Filtros ── */}
       <div style={{ background: T.white, borderRadius: 10, padding: '10px 14px', border: `1px solid ${T.border}`, marginBottom: 18, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
         <span style={{ fontSize: 12, color: T.muted, fontWeight: 600 }}>Filtros:</span>
+
+        {/* Filtro de mês/ano — principal */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <label style={{ fontSize: 11, color: T.muted, whiteSpace: 'nowrap' }}>Mês/Ano</label>
+          <input
+            type="month"
+            value={mesAno}
+            onChange={e => e.target.value && setMesAno(e.target.value)}
+            style={{ padding: '5px 8px', border: `1px solid ${T.border}`, borderRadius: 7, fontSize: 12, color: T.text, background: 'var(--input-bg)', cursor: 'pointer', outline: 'none' }}
+          />
+        </div>
+
         <select value={fTipo} onChange={e => setFTipo(e.target.value)} style={{ padding: '6px 10px', border: `1px solid ${T.border}`, borderRadius: 7, fontSize: 12, color: T.text, background: 'var(--input-bg)', cursor: 'pointer' }}>
           <option value="">Todos os tipos</option>
           <option value="receita">Receita</option>
@@ -549,8 +565,9 @@ export default function MesFechado({ empresa, data, onFechar, onReabrir, usuario
           <option value="">Todas as categorias</option>
           {allCats.map(c => <option key={c}>{c}</option>)}
         </select>
-        {(fTipo || fCat || fStatus) && (
-          <button onClick={() => { setFTipo(''); setFCat(''); setFStatus('') }}
+
+        {(mesAno !== '2026-05' || fTipo || fCat || fStatus) && (
+          <button onClick={() => { setMesAno('2026-05'); setFTipo(''); setFCat(''); setFStatus('') }}
             style={{ background: 'none', border: 'none', color: T.primary, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
             Limpar filtros
           </button>
