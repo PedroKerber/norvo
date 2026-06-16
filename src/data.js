@@ -60,7 +60,7 @@ export const genFluxoCaixaData = (lancamentos) => {
       .reduce((s, l) => s + l.valor, 0)
     return { dia: `${day < 10 ? '0' : ''}${day}/05`, entradas, saidas }
   })
-  let acumulado = 320000
+  let acumulado = 0
   return days.map(d => {
     acumulado += d.entradas - d.saidas
     return { ...d, saldo: acumulado }
