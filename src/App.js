@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { T } from './theme'
-import { initData } from './data'
+import { initData, EMPRESAS } from './data'
 import { supabase, getLancamentos, saveLancamento, deleteLancamento, saveLancamentos, getMetas, saveMeta, deleteMeta, signIn, signOut } from './supabase'
 
 import Sidebar from './components/Sidebar'
@@ -161,6 +161,8 @@ export default function App() {
         usuario={usuario}
         onSelect={emp => { setEmpresa(emp); setPage('dashboard') }}
         data={appData}
+        onLogout={handleLogout}
+        onNovaEmpresa={() => { setEmpresa(EMPRESAS[0]); setPage('empresas') }}
       />
     )
   }
