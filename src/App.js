@@ -186,6 +186,7 @@ export default function App() {
           setEmpresa={emp => { setEmpresa(emp); setPage('dashboard') }}
           usuario={usuario}
           onLogout={handleLogout}
+          setPage={setPage}
         />
         <main style={{ flex: 1, marginTop: 60, padding: '28px 28px 40px', overflowX: 'hidden' }}>
           {renderPage()}

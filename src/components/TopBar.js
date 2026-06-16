@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { T } from '../theme'
 import { EMPRESAS } from '../data'
 
-export default function TopBar({ empresa, setEmpresa, onMenu, usuario }) {
+export default function TopBar({ empresa, setEmpresa, onMenu, usuario, setPage }) {
   const [open, setOpen] = useState(false)
+  const [userOpen, setUserOpen] = useState(false)
 
   return (
     <header style={{
@@ -62,8 +63,24 @@ export default function TopBar({ empresa, setEmpresa, onMenu, usuario }) {
       </button>
 
       {/* User */}
-      <div style={{ width: 34, height: 34, borderRadius: '50%', background: T.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
-        {(usuario?.nome || 'P')[0].toUpperCase()}
+      <div style={{ position: 'relative' }}>
+        <div onClick={() => setUserOpen(o => !o)} style={{ width: 34, height: 34, borderRadius: '50%', background: T.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+          {(usuario?.nome || 'P')[0].toUpperCase()}
+        </div>
+        {userOpen && (
+          <>
+            <div onClick={() => setUserOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 299 }} />
+            <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 8, background: T.white, border: `1px solid ${T.border}`, borderRadius: 10, boxShadow: T.shadowMd, zIndex: 300, minWidth: 200 }}>
+              <div style={{ padding: '12px 16px', borderBottom: `1px solid ${T.border}` }}>
+                <div style={{ fontWeight: 700, fontSize: 13, color: T.text }}>{usuario?.nome}</div>
+                <div style={{ fontSize: 11, color: T.muted }}>{usuario?.email}</div>
+              </div>
+              <button onClick={() => { setPage('configuracoes'); setUserOpen(false) }} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 16px', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, color: T.text, textAlign: 'left' }}>
+                ⚙ Configurações
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </header>
   )
