@@ -69,7 +69,6 @@ export default function CentroCusto({ empresa, data }) {
     setModal(false)
   }
 
-  const handleToggle = (id) => setCentros(prev => prev.map(c => c.id === id ? { ...c, ativo: !c.ativo } : c))
   const handleDelete = (id) => { setCentros(prev => prev.filter(c => c.id !== id)); setConfirm(null) }
 
   const empNome = (id) => EMPRESAS.find(e => e.id === id)?.nome || id

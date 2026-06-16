@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { T, fmtS } from '../theme'
 import { Card, Btn, KpiCard } from '../components/ui'
-import { EMPRESAS, CATS_DESPESA } from '../data'
+import { CATS_DESPESA } from '../data'
 
 const PERIODOS = ['Este Mês', 'Mês Anterior', 'Últimos 3 Meses', 'Últimos 6 Meses', 'Este Ano', 'Personalizado']
 const MESES_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
