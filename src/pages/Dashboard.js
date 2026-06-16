@@ -18,7 +18,7 @@ export default function Dashboard({ empresa, data, setPage, onNova }) {
   const tDesp = useMemo(() => filteredLancs.filter(l => l.tipo === 'despesa' && l.status === 'Pago').reduce((s, l) => s + l.valor, 0), [filteredLancs])
   const lucro = tRec - tDesp
   const margem = tRec > 0 ? (lucro / tRec) * 100 : 0
-  const saldoCaixa = 320000 + tRec - tDesp
+  const saldoCaixa = tRec - tDesp
 
   const fluxoData = useMemo(() => genFluxoCaixaData(filteredLancs), [filteredLancs])
   const fluxoResumo = fluxoData.reduce((acc, d) => ({ e: acc.e + d.entradas, s: acc.s + d.saidas }), { e: 0, s: 0 })
@@ -58,11 +58,11 @@ export default function Dashboard({ empresa, data, setPage, onNova }) {
 
       {/* KPI Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 22 }}>
-        <KpiCard icon="↑" iconBg={T.greenL} label="Receitas (mês)" value={fmtS(tRec)} delta={18.2} />
-        <KpiCard icon="↓" iconBg={T.redL} label="Despesas (mês)" value={fmtS(tDesp)} delta={-9.4} />
-        <KpiCard icon="$" iconBg={T.blueL} label="Lucro Líquido (mês)" value={fmtS(lucro)} delta={23.7} />
-        <KpiCard icon="%" iconBg={T.purpleL} label="Margem Líquida" value={fmtPct(margem)} delta={3.6} />
-        <KpiCard icon="🏦" iconBg={T.yellowL} label="Saldo em Caixa" value={fmtS(saldoCaixa)} delta={12.6} />
+        <KpiCard icon="↑" iconBg={T.greenL} label="Receitas (mês)" value={fmtS(tRec)} />
+        <KpiCard icon="↓" iconBg={T.redL} label="Despesas (mês)" value={fmtS(tDesp)} />
+        <KpiCard icon="$" iconBg={T.blueL} label="Lucro Líquido (mês)" value={fmtS(lucro)} />
+        <KpiCard icon="%" iconBg={T.purpleL} label="Margem Líquida" value={fmtPct(margem)} />
+        <KpiCard icon="🏦" iconBg={T.yellowL} label="Saldo em Caixa" value={fmtS(saldoCaixa)} />
       </div>
 
       {/* Row 2 */}
