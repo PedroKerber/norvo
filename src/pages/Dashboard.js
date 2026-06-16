@@ -1,37 +1,43 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Bar, Line } from 'recharts'
 import { T, fmt, fmtS, fmtPct } from '../theme'
 import { genFluxoCaixaData } from '../data'
 import { Card, KpiCard, Badge } from '../components/ui'
+import CompetenciaSelector, { COMPETENCIA_DEFAULT, filterByCompetencia, getCompLabel } from '../components/CompetenciaSelector'
 
 const COLORS_PIE = ['#2563eb', '#dc2626', '#7c3aed', '#16a34a', '#ea580c', '#0891b2']
 
 export default function Dashboard({ empresa, data, setPage, onNova }) {
+  const [comp, setComp] = useState(COMPETENCIA_DEFAULT)
+
   const lancs = useMemo(() => data.lancamentos || [], [data.lancamentos])
-  const tRec = useMemo(() => lancs.filter(l => l.tipo === 'receita' && l.status === 'Recebida').reduce((s, l) => s + l.valor, 0), [lancs])
-  const tRecPrev = useMemo(() => lancs.filter(l => l.tipo === 'receita').reduce((s, l) => s + l.valor, 0), [lancs])
-  const tDesp = useMemo(() => lancs.filter(l => l.tipo === 'despesa' && l.status === 'Pago').reduce((s, l) => s + l.valor, 0), [lancs])
+  const filteredLancs = useMemo(() => filterByCompetencia(lancs, comp), [lancs, comp])
+
+  const tRec = useMemo(() => filteredLancs.filter(l => l.tipo === 'receita' && l.status === 'Recebida').reduce((s, l) => s + l.valor, 0), [filteredLancs])
+  const tRecPrev = useMemo(() => filteredLancs.filter(l => l.tipo === 'receita').reduce((s, l) => s + l.valor, 0), [filteredLancs])
+  const tDesp = useMemo(() => filteredLancs.filter(l => l.tipo === 'despesa' && l.status === 'Pago').reduce((s, l) => s + l.valor, 0), [filteredLancs])
   const lucro = tRec - tDesp
   const margem = tRec > 0 ? (lucro / tRec) * 100 : 0
   const saldoCaixa = 320000 + tRec - tDesp
 
-  const fluxoData = useMemo(() => genFluxoCaixaData(lancs), [lancs])
+  const fluxoData = useMemo(() => genFluxoCaixaData(filteredLancs), [filteredLancs])
   const fluxoResumo = fluxoData.reduce((acc, d) => ({ e: acc.e + d.entradas, s: acc.s + d.saidas }), { e: 0, s: 0 })
 
   const despCats = useMemo(() => {
     const map = {}
-    lancs.filter(l => l.tipo === 'despesa').forEach(l => {
+    filteredLancs.filter(l => l.tipo === 'despesa').forEach(l => {
       map[l.catNome] = (map[l.catNome] || 0) + l.valor
     })
     const total = Object.values(map).reduce((s, v) => s + v, 0) || 1
     return Object.entries(map).map(([n, v]) => ({ n, v, pct: Math.round(v / total * 100) })).sort((a, b) => b.v - a.v).slice(0, 6)
-  }, [lancs])
+  }, [filteredLancs])
 
-  const contasReceber = lancs.filter(l => l.tipo === 'receita' && l.status === 'A receber').reduce((s, l) => s + l.valor, 0)
-  const contasReceberAtr = lancs.filter(l => l.tipo === 'receita' && l.status === 'Atrasada').reduce((s, l) => s + l.valor, 0)
-  const contasPagar = lancs.filter(l => l.tipo === 'despesa' && l.status === 'Pendente').reduce((s, l) => s + l.valor, 0)
+  const contasReceber = filteredLancs.filter(l => l.tipo === 'receita' && l.status === 'A receber').reduce((s, l) => s + l.valor, 0)
+  const contasReceberAtr = filteredLancs.filter(l => l.tipo === 'receita' && l.status === 'Atrasada').reduce((s, l) => s + l.valor, 0)
+  const contasPagar = filteredLancs.filter(l => l.tipo === 'despesa' && l.status === 'Pendente').reduce((s, l) => s + l.valor, 0)
 
-  const recentes = [...lancs].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 6)
+  const recentes = [...filteredLancs].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 6)
+  const compLabel = getCompLabel(comp)
 
   const metas = data.metas || []
 
@@ -45,9 +51,7 @@ export default function Dashboard({ empresa, data, setPage, onNova }) {
             <div style={{ color: T.sub, fontSize: 14 }}>Visão geral da saúde financeira da sua empresa.</div>
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <div style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 8, padding: '7px 14px', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: T.sub }}>
-              📅 01/05/2026 - 31/05/2026 <span style={{ fontSize: 11 }}>▾</span>
-            </div>
+            <CompetenciaSelector {...comp} onChange={setComp} />
           </div>
         </div>
       </div>
@@ -76,7 +80,7 @@ export default function Dashboard({ empresa, data, setPage, onNova }) {
                 ))}
               </div>
             </div>
-            <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 6, padding: '5px 10px', fontSize: 12, color: T.sub, cursor: 'pointer' }}>Este mês ▾</div>
+            <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 6, padding: '5px 10px', fontSize: 12, color: T.sub }}>{compLabel}</div>
           </div>
           <ResponsiveContainer width="100%" height={180}>
             <ComposedChart data={fluxoData.filter((_, i) => i % 3 === 0)} margin={{ top: 4, right: 0, left: -20, bottom: 0 }}>
@@ -188,7 +192,7 @@ export default function Dashboard({ empresa, data, setPage, onNova }) {
             <button onClick={() => setPage('contas_pagar')} style={{ background: 'none', border: 'none', color: T.primary, cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: 'inherit' }}>Ver todas</button>
           </div>
           {[
-            { label: 'Pagas no mês', value: tDesp, sub: `Total de pagamentos: ${lancs.filter(l => l.tipo === 'despesa' && l.status === 'Pago').length}`, pct: 100, cor: T.green },
+            { label: 'Pagas no mês', value: tDesp, sub: `Total de pagamentos: ${filteredLancs.filter(l => l.tipo === 'despesa' && l.status === 'Pago').length}`, pct: 100, cor: T.green },
             { label: 'A pagar', value: contasPagar, sub: 'Vencem nos próximos 30 dias', pct: 67, cor: T.yellow },
             { label: 'Atrasadas', value: 0, sub: 'Nenhuma em atraso', cor: T.orange },
           ].map(item => (

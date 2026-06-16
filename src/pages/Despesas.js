@@ -3,11 +3,13 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, 
 import { T, fmt, fmtS, fd, uid } from '../theme'
 import { CATS_DESPESA, CONTAS } from '../data'
 import { Card, Btn, Badge, StatusBadge, KpiCard, Modal, Input, Select, SearchInput, FilterBar, Table, EmptyState, Confirm, Toast } from '../components/ui'
+import CompetenciaSelector, { COMPETENCIA_DEFAULT, filterByCompetencia } from '../components/CompetenciaSelector'
 
 const COLORS = ['#2563eb', '#dc2626', '#7c3aed', '#16a34a', '#ea580c', '#0891b2', '#ca8a04', '#9ca3af']
 const STATUS_OPTS = ['Pago', 'Pendente', 'Atrasado']
 
 export default function Despesas({ empresa, data, onSave, onDelete }) {
+  const [comp, setComp] = useState(COMPETENCIA_DEFAULT)
   const [search, setSearch] = useState('')
   const [fStatus, setFStatus] = useState('')
   const [fCat, setFCat] = useState('')
@@ -17,7 +19,8 @@ export default function Despesas({ empresa, data, onSave, onDelete }) {
   const [toast, setToast] = useState(null)
   const [form, setForm] = useState({})
 
-  const lancs = (data.lancamentos || []).filter(l => l.tipo === 'despesa')
+  const allLancs = (data.lancamentos || []).filter(l => l.tipo === 'despesa')
+  const lancs = useMemo(() => filterByCompetencia(allLancs, comp), [allLancs, comp])
 
   const filtered = useMemo(() => {
     let l = [...lancs].sort((a, b) => b.data.localeCompare(a.data))
@@ -103,7 +106,8 @@ export default function Despesas({ empresa, data, onSave, onDelete }) {
             <div style={{ color: T.sub, fontSize: 14 }}>Acompanhe todas as despesas da empresa selecionada.</div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <CompetenciaSelector {...comp} onChange={setComp} />
           <Btn variant="ghost" icon="↑">Exportar</Btn>
           <Btn variant="danger" icon="+" onClick={openNew}>Nova despesa</Btn>
         </div>

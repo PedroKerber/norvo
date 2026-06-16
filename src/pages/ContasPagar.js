@@ -1,11 +1,14 @@
 import { useMemo, useState } from 'react'
 import { T, fmt, fd } from '../theme'
 import { Card, KpiCard, StatusBadge, SearchInput, Table, Btn } from '../components/ui'
+import CompetenciaSelector, { COMPETENCIA_DEFAULT, filterByCompetencia } from '../components/CompetenciaSelector'
 
 export default function ContasPagar({ data, onSave, setPage }) {
+  const [comp, setComp] = useState(COMPETENCIA_DEFAULT)
   const [search, setSearch] = useState('')
   const [fStatus, setFStatus] = useState('')
-  const lancs = (data.lancamentos || []).filter(l => l.tipo === 'despesa')
+  const allLancs = (data.lancamentos || []).filter(l => l.tipo === 'despesa')
+  const lancs = useMemo(() => filterByCompetencia(allLancs, comp), [allLancs, comp])
 
   const filtered = useMemo(() => {
     let l = [...lancs].sort((a, b) => (a.vencimento || '').localeCompare(b.vencimento || ''))
@@ -50,6 +53,7 @@ export default function ContasPagar({ data, onSave, setPage }) {
           <h1 style={{ fontWeight: 800, fontSize: 26, margin: '0 0 4px' }}>Contas a Pagar</h1>
           <div style={{ color: T.sub, fontSize: 14 }}>Controle de pagamentos e obrigações financeiras.</div>
         </div>
+        <CompetenciaSelector {...comp} onChange={setComp} />
         <Btn variant="danger" icon="+" onClick={() => setPage && setPage('despesas')}>Nova conta a pagar</Btn>
       </div>
 

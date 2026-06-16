@@ -3,10 +3,13 @@ import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, C
 import { T, fmt, fmtS } from '../theme'
 import { genFluxoCaixaData } from '../data'
 import { Card, KpiCard } from '../components/ui'
+import CompetenciaSelector, { COMPETENCIA_DEFAULT, filterByCompetencia } from '../components/CompetenciaSelector'
 
 export default function FluxoCaixa({ data }) {
+  const [comp, setComp] = useState(COMPETENCIA_DEFAULT)
   const [view, setView] = useState('diario')
-  const lancs = useMemo(() => data.lancamentos || [], [data.lancamentos])
+  const allLancs = useMemo(() => data.lancamentos || [], [data.lancamentos])
+  const lancs = useMemo(() => filterByCompetencia(allLancs, comp), [allLancs, comp])
   const fluxoData = useMemo(() => genFluxoCaixaData(lancs), [lancs])
 
   const totalEnt = fluxoData.reduce((s, d) => s + d.entradas, 0)
@@ -33,9 +36,7 @@ export default function FluxoCaixa({ data }) {
           <div style={{ color: T.sub, fontSize: 14 }}>Controle de entradas, saídas e saldo acumulado.</div>
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <div style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 8, padding: '7px 14px', fontSize: 13, color: T.sub }}>
-            📅 Maio/2026 ▾
-          </div>
+          <CompetenciaSelector {...comp} onChange={setComp} />
           <button style={{ background: T.primary, color: '#fff', border: 'none', borderRadius: 8, padding: '9px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
             ↑ Exportar
           </button>

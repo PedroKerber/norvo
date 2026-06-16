@@ -1,11 +1,14 @@
 import { useMemo, useState } from 'react'
 import { T, fmt, fd } from '../theme'
 import { Card, KpiCard, StatusBadge, SearchInput, Table, Btn } from '../components/ui'
+import CompetenciaSelector, { COMPETENCIA_DEFAULT, filterByCompetencia } from '../components/CompetenciaSelector'
 
 export default function ContasReceber({ data, onSave, setPage }) {
+  const [comp, setComp] = useState(COMPETENCIA_DEFAULT)
   const [search, setSearch] = useState('')
   const [fStatus, setFStatus] = useState('')
-  const lancs = (data.lancamentos || []).filter(l => l.tipo === 'receita')
+  const allLancs = (data.lancamentos || []).filter(l => l.tipo === 'receita')
+  const lancs = useMemo(() => filterByCompetencia(allLancs, comp), [allLancs, comp])
 
   const filtered = useMemo(() => {
     let l = [...lancs].sort((a, b) => b.vencimento?.localeCompare(a.vencimento || '') || 0)
@@ -49,6 +52,7 @@ export default function ContasReceber({ data, onSave, setPage }) {
           <h1 style={{ fontWeight: 800, fontSize: 26, margin: '0 0 4px' }}>Contas a Receber</h1>
           <div style={{ color: T.sub, fontSize: 14 }}>Gerencie os recebíveis da empresa.</div>
         </div>
+        <CompetenciaSelector {...comp} onChange={setComp} />
         <Btn icon="+" onClick={() => setPage && setPage('receitas')}>Novo recebível</Btn>
       </div>
 

@@ -2,22 +2,25 @@ import { useState, useMemo } from 'react'
 import { T, fmt, fd } from '../theme'
 import { Card, Btn, Badge, StatusBadge, SearchInput, Table, KpiCard, Confirm, Toast } from '../components/ui'
 import { CATS_RECEITA, CATS_DESPESA } from '../data'
+import CompetenciaSelector, { COMPETENCIA_DEFAULT, filterByCompetencia } from '../components/CompetenciaSelector'
 
 const COLORS_R = ['#16a34a', '#2563eb', '#7c3aed', '#ea580c', '#0891b2', '#9ca3af']
 const COLORS_D = ['#2563eb', '#dc2626', '#7c3aed', '#16a34a', '#ea580c', '#0891b2', '#ca8a04', '#9ca3af']
 
 export default function Transacoes({ data, onDelete, onNovaDespesa, onNovaReceita }) {
+  const [comp, setComp] = useState(COMPETENCIA_DEFAULT)
   const [search, setSearch] = useState('')
   const [fTipo, setFTipo] = useState('')
   const [confirm, setConfirm] = useState(null)
   const [toast, setToast] = useState(null)
 
+  const allLancs = useMemo(() => data.lancamentos || [], [data.lancamentos])
   const lancs = useMemo(() => {
-    let l = [...(data.lancamentos || [])].sort((a, b) => b.data.localeCompare(a.data))
+    let l = [...filterByCompetencia(allLancs, comp)].sort((a, b) => b.data.localeCompare(a.data))
     if (search) l = l.filter(x => [x.desc, x.catNome, x.cliente, x.fornecedor].filter(Boolean).some(v => v.toLowerCase().includes(search.toLowerCase())))
     if (fTipo) l = l.filter(x => x.tipo === fTipo)
     return l
-  }, [data, search, fTipo])
+  }, [allLancs, comp, search, fTipo])
 
   const tRec = lancs.filter(l => l.tipo === 'receita').reduce((s, l) => s + l.valor, 0)
   const tDesp = lancs.filter(l => l.tipo === 'despesa').reduce((s, l) => s + l.valor, 0)
@@ -72,7 +75,8 @@ export default function Transacoes({ data, onDelete, onNovaDespesa, onNovaReceit
           <h1 style={{ fontWeight: 800, fontSize: 26, margin: '0 0 4px' }}>Transações</h1>
           <div style={{ color: T.sub, fontSize: 14 }}>Histórico completo de receitas e despesas.</div>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <CompetenciaSelector {...comp} onChange={setComp} />
           <Btn icon="+" onClick={onNovaReceita}>+ Receita</Btn>
           <Btn variant="danger" icon="+" onClick={onNovaDespesa}>+ Despesa</Btn>
         </div>

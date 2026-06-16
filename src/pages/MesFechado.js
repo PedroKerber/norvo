@@ -1,20 +1,14 @@
-import { useMemo, useState, useCallback, useRef } from 'react'
+import { useMemo, useState, useCallback } from 'react'
 import * as XLSX from 'xlsx'
 import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { T, fmt, fmtS, fmtPct } from '../theme'
 import { genFluxoCaixaData } from '../data'
 import { Card, Btn, Toast } from '../components/ui'
+import CompetenciaSelector, { COMPETENCIA_DEFAULT, filterByCompetencia } from '../components/CompetenciaSelector'
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
-const MESES_S = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 const COLORS_R = ['#16a34a','#2563eb','#7c3aed','#ea580c','#9ca3af','#0891b2']
 const COLORS_D = ['#2563eb','#dc2626','#7c3aed','#16a34a','#ea580c','#0891b2']
-const _now = new Date()
-const CURRENT_MES = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}`
-const COMP_PRESETS = [
-  { key:'hoje', label:'Hoje' }, { key:'7d', label:'7 dias' }, { key:'30d', label:'30 dias' },
-  { key:'mes_atual', label:'Mês Atual' }, { key:'mes_ant', label:'Mês Anterior' }, { key:'ano_atual', label:'Ano Atual' },
-]
 
 function pct(v) { return `${(+v).toFixed(1).replace('.',',')}%` }
 function fmtL(v) { return `R$ ${(+v).toLocaleString('pt-BR',{minimumFractionDigits:2})}` }
@@ -184,16 +178,13 @@ export default function MesFechado({ empresa, data, onFechar, onReabrir, usuario
   const [toast, setToast] = useState(null)
   const [modal, setModal] = useState(null)
   const [motivo, setMotivo] = useState('')
-  const [mesAno, setMesAno] = useState('2026-05')
+  const [comp, setComp] = useState({ ...COMPETENCIA_DEFAULT, mesAno: '2026-05' })
+  const mesAno = comp.mesAno
+  const dateRange = comp.dateRange
+  const activePreset = comp.activePreset
   const [fTipo, setFTipo] = useState('')
   const [fCat, setFCat] = useState('')
   const [fStatus, setFStatus] = useState('')
-  const compTriggerRef = useRef(null)
-  const [compOpen, setCompOpen] = useState(false)
-  const [compPos, setCompPos] = useState({ top: 0, left: 0 })
-  const [navAno, setNavAno] = useState(() => new Date().getFullYear())
-  const [dateRange, setDateRange] = useState(null)
-  const [activePreset, setActivePreset] = useState(null)
 
   const HIST_KEY = `x8_hist_${empresa?.id}`
   const [historico, setHistorico] = useState(() => {
@@ -210,29 +201,13 @@ export default function MesFechado({ empresa, data, onFechar, onReabrir, usuario
   const prevMesAno = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`
   const prevMesLabel = `${MESES[prevDate.getMonth()]}/${prevDate.getFullYear()}`
 
-  const navMes = (dir) => {
-    const d = new Date(anoN, mesN - 1 + dir, 1)
-    setMesAno(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
-    setDateRange(null)
-    setActivePreset(null)
-  }
-
   const filteredLancs = useMemo(() => {
-    let l
-    if (dateRange) {
-      l = lancs.filter(x => {
-        if (!x.data) return false
-        const d = new Date(x.data + 'T00:00:00')
-        return d >= dateRange.from && d <= dateRange.to
-      })
-    } else {
-      l = lancs.filter(x => x.data?.startsWith(mesAno))
-    }
+    let l = filterByCompetencia(lancs, comp)
     if (fTipo) l = l.filter(x => x.tipo === fTipo)
     if (fCat) l = l.filter(x => x.catNome === fCat)
     if (fStatus) l = l.filter(x => x.status === fStatus)
     return l
-  }, [lancs, mesAno, dateRange, fTipo, fCat, fStatus])
+  }, [lancs, comp, fTipo, fCat, fStatus])
 
   const lancsAnt = useMemo(() => lancs.filter(x => x.data?.startsWith(prevMesAno)), [lancs, prevMesAno])
 
@@ -292,57 +267,6 @@ export default function MesFechado({ empresa, data, onFechar, onReabrir, usuario
     setHistorico(next)
     try { localStorage.setItem(HIST_KEY, JSON.stringify(next)) } catch {}
   }, [historico, HIST_KEY, usuario, mesLabel])
-
-  const openComp = () => {
-    if (compTriggerRef.current) {
-      const r = compTriggerRef.current.getBoundingClientRect()
-      setCompPos({ top: r.bottom + 6, left: r.left })
-    }
-    setNavAno(anoN)
-    setCompOpen(true)
-  }
-
-  const handlePreset = (key) => {
-    const n = new Date()
-    const today = new Date(n.getFullYear(), n.getMonth(), n.getDate())
-    const todayMes = `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`
-    setActivePreset(key)
-    if (key === 'hoje') {
-      const to = new Date(today); to.setHours(23,59,59,999)
-      setDateRange({ from: today, to }); setMesAno(todayMes)
-    } else if (key === '7d') {
-      const from = new Date(today); from.setDate(from.getDate()-6)
-      const to = new Date(today); to.setHours(23,59,59,999)
-      setDateRange({ from, to }); setMesAno(todayMes)
-    } else if (key === '30d') {
-      const from = new Date(today); from.setDate(from.getDate()-29)
-      const to = new Date(today); to.setHours(23,59,59,999)
-      setDateRange({ from, to }); setMesAno(todayMes)
-    } else if (key === 'mes_atual') {
-      setDateRange(null); setMesAno(todayMes)
-    } else if (key === 'mes_ant') {
-      const p = new Date(n.getFullYear(), n.getMonth()-1, 1)
-      setDateRange(null); setMesAno(`${p.getFullYear()}-${String(p.getMonth()+1).padStart(2,'0')}`)
-    } else if (key === 'ano_atual') {
-      const from = new Date(n.getFullYear(), 0, 1)
-      const to = new Date(n.getFullYear(), 11, 31, 23, 59, 59, 999)
-      setDateRange({ from, to }); setMesAno(todayMes)
-    }
-    setCompOpen(false)
-  }
-
-  const handleSelectMes = (mStr) => {
-    setMesAno(mStr); setDateRange(null); setActivePreset(null); setCompOpen(false)
-  }
-
-  const competenciaLabel =
-    activePreset === 'hoje' ? 'Hoje'
-    : activePreset === '7d' ? 'Últimos 7 dias'
-    : activePreset === '30d' ? 'Últimos 30 dias'
-    : activePreset === 'mes_atual' ? `Mês Atual — ${mesLabel}`
-    : activePreset === 'mes_ant' ? `Mês Anterior — ${mesLabel}`
-    : activePreset === 'ano_atual' ? `Ano ${new Date().getFullYear()}`
-    : mesLabel
 
   const handleFechar = () => {
     onFechar?.()
@@ -462,81 +386,6 @@ export default function MesFechado({ empresa, data, onFechar, onReabrir, usuario
   return (
     <div style={{ fontFamily: "'Segoe UI', sans-serif", color: T.text }}>
       {toast && <Toast msg={toast.msg} type={toast.type} onDone={() => setToast(null)} />}
-
-      {/* ══ COMPETÊNCIA FINANCEIRA DROPDOWN ══ */}
-      {compOpen && (
-        <>
-          <div onClick={() => setCompOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 450 }} />
-          <div style={{
-            position: 'fixed', top: compPos.top, left: compPos.left, zIndex: 451,
-            background: T.white, borderRadius: 14, width: 300,
-            boxShadow: '0 8px 40px rgba(0,0,0,0.18)', border: `1px solid ${T.border}`,
-            padding: '16px 16px 14px', fontFamily: "'Segoe UI', sans-serif",
-          }}>
-            {/* Header do dropdown */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.6px' }}>Competência Financeira</span>
-              <button onClick={() => setCompOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.muted, fontSize: 18, lineHeight: 1, padding: 0 }}>×</button>
-            </div>
-
-            {/* Presets */}
-            <div style={{ fontSize: 10, color: T.muted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 7 }}>Atalhos rápidos</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 5, marginBottom: 14 }}>
-              {COMP_PRESETS.map(p => (
-                <button key={p.key} onClick={() => handlePreset(p.key)} style={{
-                  padding: '6px 0', borderRadius: 7, fontSize: 11, fontWeight: 600,
-                  cursor: 'pointer', textAlign: 'center', fontFamily: 'inherit',
-                  background: activePreset === p.key ? T.primary : T.bg,
-                  color: activePreset === p.key ? '#fff' : T.sub,
-                  border: `1px solid ${activePreset === p.key ? T.primary : T.border}`,
-                  transition: 'all 0.1s',
-                }}>{p.label}</button>
-              ))}
-            </div>
-
-            {/* Divisor */}
-            <div style={{ height: 1, background: T.border, margin: '0 -16px 14px' }} />
-
-            {/* Navegação por ano */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <button onClick={() => setNavAno(a => a - 1)} style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 7, width: 30, height: 30, cursor: 'pointer', color: T.sub, fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit' }}>‹</button>
-              <span style={{ fontWeight: 900, fontSize: 17, color: T.text, letterSpacing: '-0.3px' }}>{navAno}</span>
-              <button onClick={() => setNavAno(a => a + 1)} style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 7, width: 30, height: 30, cursor: 'pointer', color: T.sub, fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit' }}>›</button>
-            </div>
-
-            {/* Grid de meses */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
-              {MESES_S.map((m, i) => {
-                const mStr = `${navAno}-${String(i+1).padStart(2,'0')}`
-                const isSel = !dateRange && mesAno === mStr
-                const isNow = mStr === CURRENT_MES
-                return (
-                  <button key={m} onClick={() => handleSelectMes(mStr)} style={{
-                    padding: '9px 4px', borderRadius: 8, fontSize: 12, cursor: 'pointer',
-                    fontWeight: isSel || isNow ? 700 : 500, textAlign: 'center',
-                    fontFamily: 'inherit',
-                    background: isSel ? T.primary : isNow && !isSel ? T.primaryLight : 'transparent',
-                    color: isSel ? '#fff' : isNow && !isSel ? T.green : T.text,
-                    border: isNow && !isSel ? `1px solid ${T.primary}` : '1px solid transparent',
-                    transition: 'all 0.1s',
-                  }}>{m}</button>
-                )
-              })}
-            </div>
-
-            {/* Rodapé */}
-            <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 11, color: T.muted }}>
-                {activePreset ? competenciaLabel : mesLabel}
-              </span>
-              <button onClick={() => { setMesAno(CURRENT_MES); setDateRange(null); setActivePreset(null); setCompOpen(false) }}
-                style={{ background: 'none', border: 'none', color: T.primary, cursor: 'pointer', fontSize: 11, fontWeight: 600, fontFamily: 'inherit' }}>
-                Hoje
-              </button>
-            </div>
-          </div>
-        </>
-      )}
 
       {/* ── MODAL: Fechar mês ── */}
       {modal === 'fechar' && (
@@ -705,28 +554,7 @@ export default function MesFechado({ empresa, data, onFechar, onReabrir, usuario
           <div style={{ color: T.sub, fontSize: 14 }}>Consolidação financeira, auditoria e relatórios do período.</div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <button onClick={() => navMes(-1)} title="Mês anterior" style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, width: 36, height: 40, cursor: 'pointer', color: T.sub, fontFamily: 'inherit', fontSize: 17, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>‹</button>
-          <button ref={compTriggerRef} onClick={openComp} style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            background: T.white, border: `1px solid ${compOpen ? T.primary : T.border}`,
-            borderRadius: 10, padding: '6px 14px', cursor: 'pointer', fontFamily: 'inherit',
-            boxShadow: compOpen ? `0 0 0 3px ${T.primaryLight}` : '0 1px 4px rgba(0,0,0,0.07)',
-            transition: 'all 0.15s',
-          }}>
-            <div style={{ background: T.primaryLight, borderRadius: 6, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={T.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-              </svg>
-            </div>
-            <div style={{ textAlign: 'left', minWidth: 120 }}>
-              <div style={{ fontSize: 9, color: T.muted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', lineHeight: 1 }}>Competência</div>
-              <div style={{ fontSize: 13, fontWeight: 800, color: T.text, marginTop: 3, whiteSpace: 'nowrap' }}>{competenciaLabel}</div>
-            </div>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={T.muted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
-          </button>
-          <button onClick={() => navMes(1)} title="Próximo mês" style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, width: 36, height: 40, cursor: 'pointer', color: T.sub, fontFamily: 'inherit', fontSize: 17, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>›</button>
+          <CompetenciaSelector {...comp} onChange={setComp} />
           <Btn variant="ghost" icon="↑" onClick={exportPDF}>PDF</Btn>
           <Btn variant="ghost" icon="📊" onClick={exportExcel}>Excel</Btn>
           <button onClick={shareWA} style={{ background: '#25D366', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 12px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 600 }}>WhatsApp</button>
@@ -741,13 +569,6 @@ export default function MesFechado({ empresa, data, onFechar, onReabrir, usuario
       {/* ── Filtros ── */}
       <div style={{ background: T.white, borderRadius: 10, padding: '10px 14px', border: `1px solid ${T.border}`, marginBottom: 18, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
         <span style={{ fontSize: 12, color: T.muted, fontWeight: 600 }}>Filtros:</span>
-
-        {activePreset && (
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: T.primaryLight, borderRadius: 6, padding: '3px 8px 3px 10px' }}>
-            <span style={{ fontSize: 11, color: T.primary, fontWeight: 700 }}>{competenciaLabel}</span>
-            <button onClick={() => { setActivePreset(null); setDateRange(null) }} style={{ background: 'none', border: 'none', color: T.primary, cursor: 'pointer', fontSize: 15, padding: 0, lineHeight: 1, display: 'flex', alignItems: 'center' }}>×</button>
-          </div>
-        )}
 
         <select value={fTipo} onChange={e => setFTipo(e.target.value)} style={{ padding: '6px 10px', border: `1px solid ${T.border}`, borderRadius: 7, fontSize: 12, color: T.text, background: 'var(--input-bg)', cursor: 'pointer' }}>
           <option value="">Todos os tipos</option>
@@ -764,7 +585,7 @@ export default function MesFechado({ empresa, data, onFechar, onReabrir, usuario
         </select>
 
         {(mesAno !== '2026-05' || fTipo || fCat || fStatus || dateRange || activePreset) && (
-          <button onClick={() => { setMesAno('2026-05'); setFTipo(''); setFCat(''); setFStatus(''); setDateRange(null); setActivePreset(null) }}
+          <button onClick={() => { setComp({ ...COMPETENCIA_DEFAULT, mesAno: '2026-05' }); setFTipo(''); setFCat(''); setFStatus('') }}
             style={{ background: 'none', border: 'none', color: T.primary, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
             Limpar filtros
           </button>
