@@ -35,6 +35,8 @@ export default function App() {
   const [appData, setAppData] = useState(() => initData())
   const [loading, setLoading] = useState(true)
   const [perfilFoto, setPerfilFoto] = useState(() => localStorage.getItem('x8_foto') || '')
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('x8_sidebar') === '1')
+  const sidebarW = sidebarCollapsed ? 82 : 280
 
   // Verifica sessão ao carregar
   useEffect(() => {
@@ -184,14 +186,24 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: T.bg, fontFamily: "'Segoe UI', sans-serif" }}>
-      <Sidebar page={page} setPage={setPage} usuario={usuario} perfilFoto={perfilFoto} onLogout={handleLogout} />
-      <div style={{ marginLeft: 240, flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh', minWidth: 0 }}>
+      <Sidebar
+        page={page} setPage={setPage}
+        collapsed={sidebarCollapsed}
+        onToggle={() => {
+          const n = !sidebarCollapsed
+          setSidebarCollapsed(n)
+          localStorage.setItem('x8_sidebar', n ? '1' : '')
+        }}
+        usuario={usuario} perfilFoto={perfilFoto} onLogout={handleLogout} empresa={empresa}
+      />
+      <div style={{ marginLeft: sidebarW, flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh', minWidth: 0, transition: 'margin-left .2s ease' }}>
         <TopBar
           empresa={empresa}
           setEmpresa={emp => { setEmpresa(emp); setPage('dashboard') }}
           usuario={usuario}
           onLogout={handleLogout}
           setPage={setPage}
+          sidebarWidth={sidebarW}
         />
         <main style={{ flex: 1, marginTop: 60, padding: '28px 28px 40px', overflowX: 'hidden' }}>
           {renderPage()}

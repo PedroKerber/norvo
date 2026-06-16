@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { T } from '../theme'
 import { EMPRESAS } from '../data'
 
-export default function TopBar({ empresa, setEmpresa, onMenu, usuario, setPage }) {
+export default function TopBar({ empresa, setEmpresa, onMenu, usuario, setPage, sidebarWidth = 280 }) {
   const [open, setOpen] = useState(false)
   const [userOpen, setUserOpen] = useState(false)
 
   return (
     <header style={{
-      position: 'fixed', top: 0, left: 240, right: 0, height: 60,
+      position: 'fixed', top: 0, left: sidebarWidth, right: 0, height: 60, transition: 'left .2s ease',
       background: T.white, borderBottom: `1px solid ${T.border}`,
       display: 'flex', alignItems: 'center', gap: 12, padding: '0 20px',
       zIndex: 200, boxShadow: T.shadow,
