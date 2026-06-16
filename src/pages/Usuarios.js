@@ -1,7 +1,9 @@
 import { useState, useRef } from 'react'
+import emailjs from '@emailjs/browser'
 import { T } from '../theme'
 import { Card, Btn } from '../components/ui'
 import { EMPRESAS } from '../data'
+import { EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, EMAILJS_PUBLIC_KEY } from '../config/emailjs'
 
 const MODULOS = ['Dashboard', 'Transações', 'Receitas', 'Despesas', 'Fluxo de Caixa', 'Contas a Pagar', 'Contas a Receber', 'Relatórios', 'Fechamento Mensal', 'Empresas', 'Categorias', 'Centro de Custos', 'Metas Financeiras', 'Usuários', 'Configurações', 'Logs do Sistema']
 const ACOES = ['Visualizar', 'Criar', 'Editar', 'Excluir', 'Exportar']
@@ -130,13 +132,32 @@ export default function Usuarios({ usuario }) {
       setUsuarios(prev => prev.map(u => u.id === editId ? { ...form, id: editId } : u))
       localStorage.setItem(`x8_perms_${editId}`, JSON.stringify(formPerms))
       showToast('Usuário atualizado com sucesso!')
+      setModalTipo(null)
     } else {
       const newId = Date.now().toString()
+      const empresa = EMPRESAS.find(e => e.id === form.empresaId)
       setUsuarios(prev => [...prev, { ...form, id: newId, ultimoAcesso: '—', criadoEm: new Date().toLocaleDateString('pt-BR') }])
       localStorage.setItem(`x8_perms_${newId}`, JSON.stringify(formPerms))
-      showToast('Usuário criado com sucesso!')
+      const senhaGerada = tempSenha || ''
+      emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        {
+          to_name:  form.nome,
+          to_email: form.email,
+          empresa:  empresa?.nome || '',
+          cargo:    form.cargo,
+          senha:    senhaGerada || '(definida pelo administrador)',
+          link:     'https://x8finance.com.br',
+        },
+        EMAILJS_PUBLIC_KEY
+      ).then(() => {
+        showToast('Usuário criado e convite enviado por e-mail!')
+      }).catch(() => {
+        showToast('Usuário criado. Falha ao enviar e-mail de convite.')
+      })
+      setModalTipo(null)
     }
-    setModalTipo(null)
   }
 
   const handleDelete = (id) => {
