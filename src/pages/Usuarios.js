@@ -64,12 +64,18 @@ export default function Usuarios({ usuario }) {
   const fotoRef = useRef(null)
 
   const [usuarios, setUsuarios] = useState(() => {
+    const jefferson = { id: '2', nome: 'Jefferson Costa', email: 'jeffersoncostat@gmail.com', telefone: '22998985518', empresaIds: EMPRESAS.map(e => e.id), cargo: 'CEO / Administrador Master', perfil: 'master', status: 'ativo', foto: '', ultimoAcesso: 'Nunca', criadoEm: '16/06/2026' }
     try {
       const saved = localStorage.getItem('x8_usuarios')
-      if (saved) return JSON.parse(saved)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        const hasJefferson = parsed.some(u => u.email === 'jeffersoncostat@gmail.com')
+        return hasJefferson ? parsed : [...parsed, jefferson]
+      }
     } catch {}
     return [
       { id: '1', nome: usuario?.nome || 'Pedro Kerber', email: usuario?.email || 'pedrork22@icloud.com', telefone: '', empresaIds: EMPRESAS.map(e => e.id), cargo: 'CEO / Administrador Master', perfil: 'master', status: 'ativo', foto: '', ultimoAcesso: 'Hoje', criadoEm: '16/06/2026' },
+      jefferson,
     ]
   })
 
