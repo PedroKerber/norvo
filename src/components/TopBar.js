@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { T } from '../theme'
 import { EMPRESAS } from '../data'
 import { useTheme } from '../context/ThemeContext'
+import { useNotif } from '../context/NotifContext'
+import NotifPanel, { NIcon } from './NotifPanel'
 
 function SunIcon() {
   return (
@@ -26,7 +28,9 @@ function MoonIcon() {
 export default function TopBar({ empresa, setEmpresa, onMenu, usuario, setPage, sidebarWidth = 280 }) {
   const [open, setOpen] = useState(false)
   const [userOpen, setUserOpen] = useState(false)
+  const [notifOpen, setNotifOpen] = useState(false)
   const { dark, toggleTheme } = useTheme()
+  const { unreadCount } = useNotif()
 
   return (
     <header style={{
@@ -94,10 +98,31 @@ export default function TopBar({ empresa, setEmpresa, onMenu, usuario, setPage, 
       </button>
 
       {/* Notifications */}
-      <button style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: T.sub }}>
-        🔔
-        <span style={{ position: 'absolute', top: 0, right: 0, background: T.red, color: '#fff', borderRadius: 9, fontSize: 9, fontWeight: 700, padding: '1px 4px', lineHeight: 1 }}>3</span>
-      </button>
+      <div style={{ position: 'relative' }}>
+        <button
+          onClick={() => setNotifOpen(o => !o)}
+          title="Notificações"
+          style={{
+            position: 'relative', background: notifOpen ? T.bg : 'none', border: 'none',
+            cursor: 'pointer', color: T.sub, display: 'flex', alignItems: 'center',
+            justifyContent: 'center', padding: 7, borderRadius: 8, transition: 'background .15s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = 'var(--border-light)'}
+          onMouseLeave={e => e.currentTarget.style.background = notifOpen ? T.bg : 'transparent'}>
+          <NIcon name="bell" size={19} color={unreadCount > 0 ? T.primary : T.sub} />
+          {unreadCount > 0 && (
+            <span style={{
+              position: 'absolute', top: 3, right: 3,
+              background: '#dc2626', color: '#fff', borderRadius: 9,
+              fontSize: 9, fontWeight: 700, padding: '1px 4px', lineHeight: 1,
+              minWidth: 14, textAlign: 'center',
+            }}>
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
+        </button>
+        {notifOpen && <NotifPanel onClose={() => setNotifOpen(false)} setPage={setPage} />}
+      </div>
 
       {/* User */}
       <div style={{ position: 'relative' }}>
