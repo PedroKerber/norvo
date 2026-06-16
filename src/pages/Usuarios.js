@@ -64,10 +64,7 @@ export default function Usuarios({ usuario }) {
   const fotoRef = useRef(null)
 
   const [usuarios, setUsuarios] = useState([
-    { id: '1', nome: usuario?.nome || 'Pedro Kerber', email: usuario?.email || 'pedrork22@icloud.com', telefone: '(61) 99999-9999', empresaIds: ['kz', 'kzl', 'ax'], cargo: 'CEO / Administrador Master', perfil: 'master', status: 'ativo', foto: '', ultimoAcesso: 'Hoje, 14:37', criadoEm: '10/06/2026' },
-    { id: '2', nome: 'Ana Beatriz Santos', email: 'ana@kazole.com.br', telefone: '(61) 98888-7777', empresaIds: ['kz'], cargo: 'Gerente Financeiro', perfil: 'gerente', status: 'ativo', foto: '', ultimoAcesso: 'Hoje, 11:20', criadoEm: '12/06/2026' },
-    { id: '3', nome: 'Carlos Eduardo Lima', email: 'carlos@axionz.com.br', telefone: '(11) 97777-6666', empresaIds: ['ax'], cargo: 'Contador', perfil: 'contador', status: 'ativo', foto: '', ultimoAcesso: 'Ontem, 16:45', criadoEm: '11/06/2026' },
-    { id: '4', nome: 'Mariana Oliveira', email: 'mariana@kzl.com.br', telefone: '(61) 96666-5555', empresaIds: ['kzl', 'ki1'], cargo: 'Analista Financeiro', perfil: 'admin', status: 'inativo', foto: '', ultimoAcesso: '14/06/2026', criadoEm: '10/06/2026' },
+    { id: '1', nome: usuario?.nome || 'Pedro Kerber', email: usuario?.email || 'pedrork22@icloud.com', telefone: '', empresaIds: EMPRESAS.map(e => e.id), cargo: 'CEO / Administrador Master', perfil: 'master', status: 'ativo', foto: '', ultimoAcesso: 'Hoje', criadoEm: '16/06/2026' },
   ])
 
   const [search, setSearch] = useState('')
