@@ -32,7 +32,7 @@ export default function App() {
   const isMobile = useMobile()
   const [usuario, setUsuario] = useState(null)
   const [empresa, setEmpresa] = useState(null)
-  const [page, setPage] = useState('dashboard')
+  const [page, setPage] = useState(() => localStorage.getItem('x8_last_page') || 'dashboard')
   const [appData, setAppData] = useState(() => initData())
   const [empresas, setEmpresas] = useState(EMPRESAS)
   const [extraCats, setExtraCats] = useState(() => { try { return JSON.parse(localStorage.getItem('x8_cats') || '[]') } catch { return [] } })
@@ -61,13 +61,24 @@ export default function App() {
     return () => listener.subscription.unsubscribe()
   }, [])
 
-  // Carrega empresas customizadas do localStorage
+  // Salva página e empresa no localStorage para sobreviver ao reload
+  useEffect(() => { localStorage.setItem('x8_last_page', page) }, [page])
+  useEffect(() => { if (empresa) localStorage.setItem('x8_last_empresa', empresa.id) }, [empresa])
+
+  // Carrega empresas customizadas do localStorage e restaura última empresa selecionada
   useEffect(() => {
     if (!usuario) return
+    let all = [...EMPRESAS]
     try {
       const custom = JSON.parse(localStorage.getItem(`x8_empresas_${usuario.id}`) || '[]')
-      if (custom.length > 0) setEmpresas([...EMPRESAS, ...custom])
+      if (custom.length > 0) all = [...EMPRESAS, ...custom]
     } catch {}
+    setEmpresas(all)
+    const lastId = localStorage.getItem('x8_last_empresa')
+    if (lastId) {
+      const found = all.find(e => e.id === lastId)
+      if (found) setEmpresa(found)
+    }
   }, [usuario])
 
   // Carrega dados da empresa selecionada do banco
@@ -96,6 +107,8 @@ export default function App() {
 
   const handleLogout = useCallback(async () => {
     await signOut()
+    localStorage.removeItem('x8_last_empresa')
+    localStorage.removeItem('x8_last_page')
     setUsuario(null)
     setEmpresa(null)
     setPage('dashboard')
@@ -279,7 +292,7 @@ export default function App() {
       <div style={{ marginLeft: isMobile ? 0 : sidebarW, flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh', minWidth: 0, transition: 'margin-left .2s ease' }}>
         <TopBar
           empresa={empresa}
-          setEmpresa={emp => { setEmpresa(emp); setPage('dashboard') }}
+          setEmpresa={emp => { setEmpresa(emp); setPage('dashboard'); localStorage.setItem('x8_last_page', 'dashboard') }}
           usuario={usuario}
           onLogout={handleLogout}
           setPage={setPage}
