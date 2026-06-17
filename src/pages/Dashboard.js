@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import { XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Bar, Line } from 'recharts'
 import { T, fmt, fmtS, fmtPct } from '../theme'
-import { genFluxoCaixaData } from '../data'
-import { Card, KpiCard, Badge } from '../components/ui'
+import { genFluxoCaixaData, CATS_VARIAVEL_IDS } from '../data'
+import { Card, Badge } from '../components/ui'
 import AdvancedFilters, { defaultFilter, filterLancamentos, loadSavedFilter } from '../components/AdvancedFilters'
 
 const COLORS_PIE = ['#2563eb', '#dc2626', '#7c3aed', '#16a34a', '#ea580c', '#0891b2']
@@ -13,12 +13,16 @@ export default function Dashboard({ empresa, data, setPage, onNova }) {
   const lancs = useMemo(() => data.lancamentos || [], [data.lancamentos])
   const filteredLancs = useMemo(() => filterLancamentos(lancs, filter), [lancs, filter])
 
-  const tRec = useMemo(() => filteredLancs.filter(l => l.tipo === 'receita' && l.status === 'Recebida').reduce((s, l) => s + l.valor, 0), [filteredLancs])
-  const tRecPrev = useMemo(() => filteredLancs.filter(l => l.tipo === 'receita').reduce((s, l) => s + l.valor, 0), [filteredLancs])
-  const tDesp = useMemo(() => filteredLancs.filter(l => l.tipo === 'despesa' && l.status === 'Paga').reduce((s, l) => s + l.valor, 0), [filteredLancs])
-  const lucro = tRec - tDesp
-  const margem = tRec > 0 ? (lucro / tRec) * 100 : 0
-  const saldoCaixa = tRec - tDesp
+  const tRec      = useMemo(() => filteredLancs.filter(l => l.tipo === 'receita' && l.status === 'Recebida').reduce((s, l) => s + l.valor, 0), [filteredLancs])
+  const tRecPrev  = useMemo(() => filteredLancs.filter(l => l.tipo === 'receita').reduce((s, l) => s + l.valor, 0), [filteredLancs])
+  const tDespVar  = useMemo(() => filteredLancs.filter(l => l.tipo === 'despesa' && CATS_VARIAVEL_IDS.has(l.cat) && l.status === 'Paga').reduce((s, l) => s + l.valor, 0), [filteredLancs])
+  const tDespFixed= useMemo(() => filteredLancs.filter(l => l.tipo === 'despesa' && !CATS_VARIAVEL_IDS.has(l.cat) && l.status === 'Paga').reduce((s, l) => s + l.valor, 0), [filteredLancs])
+  const tDesp     = tDespVar + tDespFixed
+  const tRetirada = useMemo(() => filteredLancs.filter(l => l.tipo === 'retirada').reduce((s, l) => s + l.valor, 0), [filteredLancs])
+  const lucroBruto  = tRec - tDespVar
+  const resultOper  = lucroBruto - tDespFixed
+  const saldoFinal  = resultOper - tRetirada
+  const margem      = tRec > 0 ? (resultOper / tRec) * 100 : 0
 
   const fluxoData = useMemo(() => genFluxoCaixaData(filteredLancs), [filteredLancs])
   const fluxoResumo = fluxoData.reduce((acc, d) => ({ e: acc.e + d.entradas, s: acc.s + d.saidas }), { e: 0, s: 0 })
@@ -52,14 +56,70 @@ export default function Dashboard({ empresa, data, setPage, onNova }) {
         <AdvancedFilters tipo="all" filter={filter} onApply={setFilter} storageKey="x8_filter_dashboard" />
       </div>
 
-      {/* KPI Cards */}
-      <div className="g-kpi">
-        <KpiCard icon="↑" iconBg={T.greenL} label="Receitas (mês)" value={fmtS(tRec)} />
-        <KpiCard icon="↓" iconBg={T.redL} label="Despesas (mês)" value={fmtS(tDesp)} />
-        <KpiCard icon="$" iconBg={T.blueL} label="Lucro Líquido (mês)" value={fmtS(lucro)} />
-        <KpiCard icon="%" iconBg={T.purpleL} label="Margem Líquida" value={fmtPct(margem)} />
-        <KpiCard icon="🏦" iconBg={T.yellowL} label="Saldo em Caixa" value={fmtS(saldoCaixa)} />
-      </div>
+      {/* DRE — Demonstração de Resultado */}
+      <Card style={{ padding: 20, marginBottom: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 15 }}>Demonstração de Resultado — DRE</div>
+            <div style={{ fontSize: 12, color: T.muted, marginTop: 2 }}>{filter.inicio} → {filter.fim}</div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 10, color: T.muted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Saldo Final</div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: saldoFinal >= 0 ? T.green : T.red }}>{fmtS(saldoFinal)}</div>
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+          {[
+            {
+              titulo: 'OPERACIONAL', cor: T.green,
+              linhas: [
+                { label: 'Receitas Totais', value: tRec, color: T.green },
+                { label: '(-) Despesas Variáveis', value: tDespVar, color: T.red },
+                { label: '= Lucro Bruto', value: lucroBruto, color: lucroBruto >= 0 ? T.green : T.red, bold: true },
+              ]
+            },
+            {
+              titulo: 'RESULTADO', cor: T.blue,
+              linhas: [
+                { label: 'Lucro Bruto', value: lucroBruto, color: lucroBruto >= 0 ? T.green : T.red },
+                { label: '(-) Despesas Fixas', value: tDespFixed, color: T.red },
+                { label: '= Resultado Operacional', value: resultOper, color: resultOper >= 0 ? T.green : T.red, bold: true },
+              ]
+            },
+            {
+              titulo: 'SALDO FINAL', cor: '#7c3aed',
+              linhas: [
+                { label: 'Resultado Operacional', value: resultOper, color: resultOper >= 0 ? T.green : T.red },
+                { label: '(-) Retiradas dos Sócios', value: tRetirada, color: '#7c3aed' },
+                { label: '= Saldo Final Disponível', value: saldoFinal, color: saldoFinal >= 0 ? T.green : T.red, bold: true },
+              ]
+            },
+          ].map(bloco => (
+            <div key={bloco.titulo} style={{ background: T.bg, borderRadius: 10, padding: 14 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: bloco.cor, letterSpacing: '0.08em', marginBottom: 12, textTransform: 'uppercase' }}>{bloco.titulo}</div>
+              {bloco.linhas.map((r, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: r.bold ? 10 : 6, marginTop: r.bold ? 2 : 0, borderTop: r.bold ? `1px solid ${T.border}` : 'none' }}>
+                  <span style={{ fontSize: 11, color: r.bold ? T.text : T.sub, fontWeight: r.bold ? 700 : 400 }}>{r.label}</span>
+                  <span style={{ fontSize: r.bold ? 14 : 12, fontWeight: r.bold ? 800 : 500, color: r.color }}>{fmtS(r.value)}</span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${T.border}` }}>
+          {[
+            { label: 'Receitas', value: tRec, color: T.green },
+            { label: 'Desp. Variáveis', value: tDespVar, color: T.red },
+            { label: 'Desp. Fixas', value: tDespFixed, color: T.red },
+            { label: 'Retiradas Sócios', value: tRetirada, color: '#7c3aed' },
+          ].map(k => (
+            <div key={k.label}>
+              <div style={{ fontSize: 11, color: T.muted, marginBottom: 3 }}>{k.label}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: k.color }}>{fmtS(k.value)}</div>
+            </div>
+          ))}
+        </div>
+      </Card>
 
       {/* Row 2 */}
       <div className="g-flow">

@@ -2,7 +2,7 @@ import { useState, useMemo, useRef } from 'react'
 import RecorrenciaPanel from '../components/RecorrenciaPanel'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { T, fmt, fmtS, fd, uid } from '../theme'
-import { CATS_DESPESA, CONTAS } from '../data'
+import { CATS_DESPESA, CATS_RETIRADA, CONTAS } from '../data'
 import { Card, Btn, Badge, StatusBadge, KpiCard, Toast, Confirm, SearchInput, Table, EmptyState } from '../components/ui'
 import AdvancedFilters, { defaultFilter, filterLancamentos, loadSavedFilter } from '../components/AdvancedFilters'
 import * as XLSX from 'xlsx'
@@ -73,7 +73,7 @@ function newForm() {
   }
 }
 
-export default function Despesas({ empresa, data, onSave, onDelete, onSaveBatch, extraCats = [] }) {
+export default function Despesas({ empresa, data, onSave, onDelete, onSaveBatch, extraCats = [], catsRetirada = CATS_RETIRADA }) {
   const catsDespesa = useMemo(() => [...CATS_DESPESA, ...extraCats.filter(c => c.tipo === 'despesa')], [extraCats])
 
   // List state
@@ -101,8 +101,23 @@ export default function Despesas({ empresa, data, onSave, onDelete, onSaveBatch,
   const [showNovoForn, setShowNovoForn] = useState(false)
   const [fornForm, setFornForm] = useState({ nome: '', cnpj: '', tel: '', email: '' })
 
+  // Nova Retirada modal
+  const [showRetirada, setShowRetirada] = useState(false)
+  const [retForm, setRetForm] = useState({ desc: '', cat: 'retirada_socios', valor: '', data: TODAY })
+  const srf = (k, v) => setRetForm(f => ({ ...f, [k]: v }))
+  const salvarRetirada = () => {
+    const v = parseR(retForm.valor)
+    if (!retForm.desc.trim() || v <= 0) return
+    const cat = catsRetirada.find(c => c.id === retForm.cat)
+    onSave({ id: uid(), tipo: 'retirada', desc: retForm.desc, cat: retForm.cat, catNome: cat?.nome || 'Retirada', valor: v, data: retForm.data, status: 'Recebida', empId: empresa.id }, false)
+    setShowRetirada(false)
+    setRetForm({ desc: '', cat: 'retirada_socios', valor: '', data: TODAY })
+    setToast({ msg: 'Retirada registrada!', type: 'success' })
+  }
+
   // Derived data
-  const allLancs = useMemo(() => (data.lancamentos || []).filter(l => l.tipo === 'despesa'), [data.lancamentos])
+  const allLancs   = useMemo(() => (data.lancamentos || []).filter(l => l.tipo === 'despesa'), [data.lancamentos])
+  const allRetiradas = useMemo(() => (data.lancamentos || []).filter(l => l.tipo === 'retirada'), [data.lancamentos])
   const lancs    = useMemo(() => filterLancamentos(allLancs, filter), [allLancs, filter])
 
   const filtered = useMemo(() => {
@@ -416,6 +431,7 @@ export default function Despesas({ empresa, data, onSave, onDelete, onSaveBatch,
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <Btn variant="ghost" icon="📊" onClick={exportExcel}>Excel</Btn>
           <Btn variant="ghost" icon="📄" onClick={exportPDF}>PDF</Btn>
+          <Btn variant="ghost" icon="←" onClick={() => setShowRetirada(true)}>Nova Retirada</Btn>
           <Btn variant="danger" icon="+" onClick={openNew}>Nova despesa</Btn>
         </div>
       </div>
@@ -491,6 +507,72 @@ export default function Despesas({ empresa, data, onSave, onDelete, onSaveBatch,
           Mostrando {filtered.length} despesa{filtered.length !== 1 ? 's' : ''}
         </div>
       </Card>
+
+      {/* ── RETIRADAS DOS SÓCIOS ── */}
+      {allRetiradas.length > 0 && (
+        <Card style={{ marginTop: 20 }}>
+          <div style={{ padding: '14px 18px', borderBottom: `1px solid var(--border)`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ background: '#ede9fe', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7c3aed', fontWeight: 700 }}>←</div>
+              <div style={{ fontWeight: 700, fontSize: 15 }}>Retiradas dos Sócios</div>
+              <div style={{ background: '#ede9fe', color: '#7c3aed', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700 }}>{allRetiradas.length}</div>
+            </div>
+            <div style={{ fontWeight: 700, fontSize: 15, color: '#7c3aed' }}>
+              {fmtS(allRetiradas.reduce((s, l) => s + l.valor, 0))}
+            </div>
+          </div>
+          {allRetiradas.map(l => (
+            <div key={l.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 18px', borderBottom: `1px solid var(--border)` }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500 }}>{l.desc}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{l.catNome} · {l.data}</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <span style={{ fontWeight: 700, color: '#7c3aed', fontSize: 14 }}>{fmtS(l.valor)}</span>
+                <button onClick={() => setConfirm(l)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.red, fontSize: 14 }}>🗑</button>
+              </div>
+            </div>
+          ))}
+        </Card>
+      )}
+
+      {/* ── MODAL NOVA RETIRADA ── */}
+      {showRetirada && (
+        <div onClick={e => e.target === e.currentTarget && setShowRetirada(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'var(--card)', borderRadius: 16, width: 420, padding: 28, boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 22 }}>
+              <div style={{ background: '#ede9fe', borderRadius: 10, width: 42, height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: '#7c3aed' }}>←</div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 16 }}>Nova Retirada de Sócio</div>
+                <div style={{ fontSize: 12, color: 'var(--text-sub)' }}>Pró-labore ou distribuição de lucros</div>
+              </div>
+            </div>
+            {[
+              { label: 'Descrição', key: 'desc', type: 'text', placeholder: 'Ex: Pró-labore Pedro — Junho/2026' },
+              { label: 'Data', key: 'data', type: 'date' },
+              { label: 'Valor (R$)', key: 'valor', type: 'text', placeholder: '0,00' },
+            ].map(f => (
+              <div key={f.key} style={{ marginBottom: 14 }}>
+                <SLabel>{f.label}</SLabel>
+                <input type={f.type} value={retForm[f.key]} placeholder={f.placeholder || ''} onChange={e => { if (f.key === 'valor') { const raw = e.target.value.replace(/\D/g,''); srf('valor', maskR(raw)) } else srf(f.key, e.target.value) }} style={iStyle(false)} />
+              </div>
+            ))}
+            <div style={{ marginBottom: 20 }}>
+              <SLabel>Categoria</SLabel>
+              <div style={{ position: 'relative' }}>
+                <select value={retForm.cat} onChange={e => srf('cat', e.target.value)} style={{ ...iStyle(false), appearance: 'none', paddingRight: 28, cursor: 'pointer' }}>
+                  {catsRetirada.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                </select>
+                <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-muted)' }}>▾</span>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <Btn variant="ghost" onClick={() => setShowRetirada(false)}>Cancelar</Btn>
+              <Btn onClick={salvarRetirada}>Registrar Retirada</Btn>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── FORM OVERLAY ── */}
       {showForm && (
