@@ -56,6 +56,49 @@ export default function Dashboard({ empresa, data, setPage, onNova }) {
         <AdvancedFilters tipo="all" filter={filter} onApply={setFilter} storageKey="x8_filter_dashboard" />
       </div>
 
+      {/* ── 5 KPIs PRINCIPAIS ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16, marginBottom: 24 }}>
+        {[
+          {
+            label: 'Total em Receitas', value: tRec, color: '#16a34a', bg: '#f0fdf4',
+            sub: 'Recebidas no período', icon: '↑',
+          },
+          {
+            label: 'Total em Despesas', value: tDesp, color: '#dc2626', bg: '#fef2f2',
+            sub: 'Fixas + Variáveis pagas', icon: '↓',
+          },
+          {
+            label: 'Lucro Líquido', value: resultOper, color: resultOper >= 0 ? '#2563eb' : '#dc2626', bg: resultOper >= 0 ? '#eff6ff' : '#fef2f2',
+            sub: 'Receitas − Despesas', icon: '$',
+          },
+          {
+            label: 'Retirada dos Sócios', value: tRetirada, color: '#ea580c', bg: '#fff7ed',
+            sub: 'Pró-labore e lucros', icon: '←', onClick: () => setPage('retirada_socios'),
+          },
+          {
+            label: 'Total em Caixa', value: saldoFinal, color: saldoFinal >= 0 ? '#7c3aed' : '#dc2626', bg: saldoFinal >= 0 ? '#ede9fe' : '#fef2f2',
+            sub: 'Saldo disponível final', icon: '=',
+          },
+        ].map(k => (
+          <div key={k.label} onClick={k.onClick}
+            style={{
+              background: 'var(--card)', borderRadius: 14, padding: '18px 18px 16px',
+              border: `1px solid var(--border)`, borderLeft: `4px solid ${k.color}`,
+              cursor: k.onClick ? 'pointer' : 'default',
+              transition: 'transform .15s, box-shadow .15s',
+            }}
+            onMouseEnter={e => { if (k.onClick) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)' } }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+              <div style={{ background: k.bg, borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', color: k.color, fontWeight: 800, fontSize: 16, flexShrink: 0 }}>{k.icon}</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-sub)', letterSpacing: '.04em', textTransform: 'uppercase', lineHeight: 1.3 }}>{k.label}</div>
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: k.color, lineHeight: 1 }}>{fmtS(k.value)}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>{k.sub}{k.onClick ? ' ↗' : ''}</div>
+          </div>
+        ))}
+      </div>
+
       {/* DRE — Demonstração de Resultado */}
       <Card style={{ padding: 20, marginBottom: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
