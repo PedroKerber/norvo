@@ -87,7 +87,7 @@ function newForm() {
 }
 
 export default function Receitas({ empresa, data, onSave, onDelete, onSaveBatch, extraCats = [] }) {
-  const catsReceita = useMemo(() => [...CATS_RECEITA, ...extraCats.filter(c => c.tipo === 'receita')], [extraCats])
+  const catsReceita = useMemo(() => extraCats.some(c => c.override) ? extraCats.filter(c => c.tipo === 'receita') : [...CATS_RECEITA, ...extraCats.filter(c => c.tipo === 'receita')], [extraCats])
 
   // List state
   const [filter, setFilter] = useState(() => loadSavedFilter('x8_filter_receitas') || defaultFilter())

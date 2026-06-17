@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react'
 import { XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ComposedChart, Bar, Line } from 'recharts'
 import { T, fmt, fmtS, fmtPct } from '../theme'
-import { genFluxoCaixaData, CATS_VARIAVEL_IDS } from '../data'
+import { genFluxoCaixaData, getVariavelIds } from '../data'
 import { Card, Badge } from '../components/ui'
 import AdvancedFilters, { defaultFilter, filterLancamentos, loadSavedFilter } from '../components/AdvancedFilters'
 
 const COLORS_PIE = ['#2563eb', '#dc2626', '#7c3aed', '#16a34a', '#ea580c', '#0891b2']
 
-export default function Dashboard({ empresa, data, setPage, onNova }) {
+export default function Dashboard({ empresa, data, setPage, onNova, extraCats = [] }) {
   const [filter, setFilter] = useState(() => loadSavedFilter('x8_filter_dashboard') || defaultFilter())
 
   const lancs = useMemo(() => data.lancamentos || [], [data.lancamentos])
@@ -15,8 +15,9 @@ export default function Dashboard({ empresa, data, setPage, onNova }) {
 
   const tRec      = useMemo(() => filteredLancs.filter(l => l.tipo === 'receita' && l.status === 'Recebida').reduce((s, l) => s + l.valor, 0), [filteredLancs])
   const tRecPrev  = useMemo(() => filteredLancs.filter(l => l.tipo === 'receita').reduce((s, l) => s + l.valor, 0), [filteredLancs])
-  const tDespVar  = useMemo(() => filteredLancs.filter(l => l.tipo === 'despesa' && CATS_VARIAVEL_IDS.has(l.cat) && l.status === 'Paga').reduce((s, l) => s + l.valor, 0), [filteredLancs])
-  const tDespFixed= useMemo(() => filteredLancs.filter(l => l.tipo === 'despesa' && !CATS_VARIAVEL_IDS.has(l.cat) && l.status === 'Paga').reduce((s, l) => s + l.valor, 0), [filteredLancs])
+  const variavelIds = useMemo(() => getVariavelIds(extraCats), [extraCats])
+  const tDespVar  = useMemo(() => filteredLancs.filter(l => l.tipo === 'despesa' && variavelIds.has(l.cat) && l.status === 'Paga').reduce((s, l) => s + l.valor, 0), [filteredLancs, variavelIds])
+  const tDespFixed= useMemo(() => filteredLancs.filter(l => l.tipo === 'despesa' && !variavelIds.has(l.cat) && l.status === 'Paga').reduce((s, l) => s + l.valor, 0), [filteredLancs, variavelIds])
   const tDesp     = tDespVar + tDespFixed
   const tRetirada = useMemo(() => filteredLancs.filter(l => l.tipo === 'retirada').reduce((s, l) => s + l.valor, 0), [filteredLancs])
   const lucroBruto  = tRec - tDespVar

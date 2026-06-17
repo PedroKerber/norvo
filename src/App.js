@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useMobile } from './context/MobileContext'
 import { T, uid } from './theme'
-import { initData, EMPRESAS } from './data'
+import { initData, EMPRESAS, CATS_KZL } from './data'
 import { supabase, getAllLancamentos, getLancamentos, saveLancamento, deleteLancamento, saveLancamentos, getMetas, saveMeta, deleteMeta, signIn, signOut, deleteAllLancamentos, deleteAllMetas } from './supabase'
 
 import Sidebar from './components/Sidebar'
@@ -265,7 +265,8 @@ export default function App() {
     )
   }
 
-  const sharedProps = { empresa, data: empData, setPage, onSave: handleSave, onDelete: handleDelete, onSaveBatch: handleSaveBatch, extraCats }
+  const effectiveExtraCats = empresa?.id === 'kzl' ? CATS_KZL : extraCats
+  const sharedProps = { empresa, data: empData, setPage, onSave: handleSave, onDelete: handleDelete, onSaveBatch: handleSaveBatch, extraCats: effectiveExtraCats }
 
   const renderPage = () => {
     if (PLACEHOLDER_PAGES.includes(page)) return <Placeholder page={page} />

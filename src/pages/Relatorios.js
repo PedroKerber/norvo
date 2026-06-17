@@ -3,14 +3,14 @@ import * as XLSX from 'xlsx'
 import { LineChart, BarChart, PieChart, Line, Bar, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { T, fmtS, fmtPct, fd } from '../theme'
 import { Card, Badge, StatusBadge } from '../components/ui'
-import { CATS_DESPESA, CATS_RECEITA, CATS_RETIRADA, CATS_VARIAVEL_IDS, CONTAS } from '../data'
+import { CATS_DESPESA, CATS_RECEITA, CATS_RETIRADA, CONTAS, getVariavelIds } from '../data'
 
 const TODAY       = new Date().toISOString().slice(0, 10)
 const MESES       = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 const FORMAS      = ['PIX','Boleto','Cartão de Crédito','Cartão de Débito','TED','DOC','Cheque','Dinheiro']
 const STATUS_OPTS = ['Recebida','A receber','Paga','A Pagar','Atrasada','Cancelada']
 const CENTROS     = ['Administrativo','Comercial','Marketing','Financeiro','TI','RH','Operacional']
-const ALL_CATS    = [...CATS_DESPESA, ...CATS_RECEITA, ...CATS_RETIRADA]
+const BASE_CATS   = [...CATS_DESPESA, ...CATS_RECEITA, ...CATS_RETIRADA]
 const CAT_COLORS  = ['#16a34a','#2563eb','#7c3aed','#ea580c','#0891b2','#9ca3af','#dc2626','#ca8a04','#059669','#4f46e5']
 const QUICK_PRESETS = ['Hoje','Esta Semana','Este Mês','Mês Passado','Últimos 30 Dias','Este Ano','Personalizado']
 const TABS = [
@@ -101,7 +101,7 @@ function chip(active) {
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
-export default function Relatorios({ empresa, data, setPage }) {
+export default function Relatorios({ empresa, data, setPage, extraCats = [] }) {
   const allLancs = useMemo(() => data.lancamentos || [], [data.lancamentos])
 
   // Filter edit state
@@ -179,8 +179,9 @@ export default function Relatorios({ empresa, data, setPage }) {
   // DRE — current period
   const tRec      = useMemo(() => filteredLancs.filter(l => l.tipo === 'receita').reduce((s,l) => s+l.valor, 0), [filteredLancs])
   const tDesp     = useMemo(() => filteredLancs.filter(l => l.tipo === 'despesa').reduce((s,l) => s+l.valor, 0), [filteredLancs])
-  const tDespVar  = useMemo(() => filteredLancs.filter(l => l.tipo === 'despesa' && CATS_VARIAVEL_IDS.has(l.cat)).reduce((s,l) => s+l.valor, 0), [filteredLancs])
-  const tDespFixed = useMemo(() => filteredLancs.filter(l => l.tipo === 'despesa' && !CATS_VARIAVEL_IDS.has(l.cat)).reduce((s,l) => s+l.valor, 0), [filteredLancs])
+  const variavelIds = useMemo(() => getVariavelIds(extraCats), [extraCats])
+  const tDespVar  = useMemo(() => filteredLancs.filter(l => l.tipo === 'despesa' && variavelIds.has(l.cat)).reduce((s,l) => s+l.valor, 0), [filteredLancs, variavelIds])
+  const tDespFixed = useMemo(() => filteredLancs.filter(l => l.tipo === 'despesa' && !variavelIds.has(l.cat)).reduce((s,l) => s+l.valor, 0), [filteredLancs, variavelIds])
   const tRetirada = useMemo(() => filteredLancs.filter(l => l.tipo === 'retirada').reduce((s,l) => s+l.valor, 0), [filteredLancs])
   const lucroBruto  = tRec - tDespVar
   const resultOper  = tRec - tDesp
@@ -376,7 +377,7 @@ export default function Relatorios({ empresa, data, setPage }) {
             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-sub)', marginBottom: 4 }}>Categoria</label>
             <select value={editCat} onChange={e => setEditCat(e.target.value)} style={sSty}>
               <option value="">Todas</option>
-              {ALL_CATS.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+              {(extraCats.some(c => c.override) ? [...extraCats.filter(c => c.tipo !== 'retirada'), ...CATS_RETIRADA] : BASE_CATS).map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
             </select>
           </div>
           <button onClick={applyFilters} style={{ background: T.primary, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>Aplicar</button>
