@@ -9,18 +9,20 @@ export const EMPRESAS = [
 ]
 
 export const CATS_RECEITA = [
+  { id: 'comissao_socios', nome: 'Comissão dos Sócios', cor: '#7c3aed' },
   { id: 'venda_imoveis', nome: 'Venda de Imóveis', cor: '#16a34a' },
   { id: 'locacao', nome: 'Locação', cor: '#2563eb' },
   { id: 'alugueis', nome: 'Aluguéis', cor: '#2563eb' },
-  { id: 'comissoes', nome: 'Comissões', cor: '#7c3aed' },
+  { id: 'comissoes', nome: 'Comissões', cor: '#0891b2' },
   { id: 'consultoria', nome: 'Consultoria', cor: '#ea580c' },
   { id: 'prestacao_servicos', nome: 'Prestação de Serviços', cor: '#0891b2' },
   { id: 'outras_receitas', nome: 'Outras Receitas', cor: '#9ca3af' },
 ]
 
 export const CATS_DESPESA = [
+  { id: 'comissao_corretor', nome: 'Comissão de Corretores', cor: '#dc2626' },
   { id: 'marketing', nome: 'Marketing', cor: '#2563eb' },
-  { id: 'comercial', nome: 'Comercial', cor: '#dc2626' },
+  { id: 'comercial', nome: 'Comercial', cor: '#ea580c' },
   { id: 'administrativo', nome: 'Administrativo', cor: '#7c3aed' },
   { id: 'trafego_pago', nome: 'Tráfego Pago', cor: '#16a34a' },
   { id: 'operacional', nome: 'Operacional', cor: '#ea580c' },
