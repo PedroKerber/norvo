@@ -3,15 +3,15 @@ import { XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Compos
 import { T, fmt, fmtS, fmtPct } from '../theme'
 import { genFluxoCaixaData } from '../data'
 import { Card, KpiCard, Badge } from '../components/ui'
-import CompetenciaSelector, { COMPETENCIA_DEFAULT, filterByCompetencia, getCompLabel } from '../components/CompetenciaSelector'
+import AdvancedFilters, { defaultFilter, filterLancamentos, loadSavedFilter } from '../components/AdvancedFilters'
 
 const COLORS_PIE = ['#2563eb', '#dc2626', '#7c3aed', '#16a34a', '#ea580c', '#0891b2']
 
 export default function Dashboard({ empresa, data, setPage, onNova }) {
-  const [comp, setComp] = useState(COMPETENCIA_DEFAULT)
+  const [filter, setFilter] = useState(() => loadSavedFilter('x8_filter_dashboard') || defaultFilter())
 
   const lancs = useMemo(() => data.lancamentos || [], [data.lancamentos])
-  const filteredLancs = useMemo(() => filterByCompetencia(lancs, comp), [lancs, comp])
+  const filteredLancs = useMemo(() => filterLancamentos(lancs, filter), [lancs, filter])
 
   const tRec = useMemo(() => filteredLancs.filter(l => l.tipo === 'receita' && l.status === 'Recebida').reduce((s, l) => s + l.valor, 0), [filteredLancs])
   const tRecPrev = useMemo(() => filteredLancs.filter(l => l.tipo === 'receita').reduce((s, l) => s + l.valor, 0), [filteredLancs])
@@ -38,7 +38,6 @@ export default function Dashboard({ empresa, data, setPage, onNova }) {
   const despesasAtrasadas = filteredLancs.filter(l => l.tipo === 'despesa' && l.status === 'Atrasada').reduce((s, l) => s + l.valor, 0)
 
   const recentes = [...filteredLancs].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 6)
-  const compLabel = getCompLabel(comp)
 
   const metas = data.metas || []
 
@@ -46,15 +45,11 @@ export default function Dashboard({ empresa, data, setPage, onNova }) {
     <div style={{ fontFamily: "'Segoe UI', sans-serif", color: T.text }}>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
-        <div className="page-hd" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <h1 style={{ fontWeight: 800, fontSize: 26, margin: '0 0 4px' }}>Dashboard</h1>
-            <div style={{ color: T.sub, fontSize: 14 }}>Visão geral da saúde financeira da sua empresa.</div>
-          </div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <CompetenciaSelector {...comp} onChange={setComp} />
-          </div>
+        <div className="page-hd" style={{ marginBottom: 16 }}>
+          <h1 style={{ fontWeight: 800, fontSize: 26, margin: '0 0 4px' }}>Dashboard</h1>
+          <div style={{ color: T.sub, fontSize: 14 }}>Visão geral da saúde financeira da sua empresa.</div>
         </div>
+        <AdvancedFilters tipo="all" filter={filter} onApply={setFilter} storageKey="x8_filter_dashboard" />
       </div>
 
       {/* KPI Cards */}
@@ -81,7 +76,7 @@ export default function Dashboard({ empresa, data, setPage, onNova }) {
                 ))}
               </div>
             </div>
-            <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 6, padding: '5px 10px', fontSize: 12, color: T.sub }}>{compLabel}</div>
+            <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 6, padding: '5px 10px', fontSize: 12, color: T.sub }}>{filter.inicio} → {filter.fim}</div>
           </div>
           <ResponsiveContainer width="100%" height={180}>
             <ComposedChart data={fluxoData.filter((_, i) => i % 3 === 0)} margin={{ top: 4, right: 0, left: -20, bottom: 0 }}>
