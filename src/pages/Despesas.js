@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef } from 'react'
+import RecorrenciaPanel from '../components/RecorrenciaPanel'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { T, fmt, fmtS, fd, uid } from '../theme'
 import { CATS_DESPESA, CONTAS } from '../data'
@@ -88,6 +89,8 @@ export default function Despesas({ empresa, data, onSave, onDelete }) {
   const [nfScanning, setNfScanning] = useState(false)
   const fileRef = useRef(null)
   const nfRef = useRef(null)
+  const recorrenciaRef = useRef(null)
+  const [recSummary, setRecSummary] = useState(null)
 
   // Marcar como Pago
   const [pagModal, setPagModal] = useState(null)
@@ -176,9 +179,17 @@ export default function Despesas({ empresa, data, onSave, onDelete }) {
   const salvar = () => {
     const e = validar()
     if (Object.keys(e).length) { setErrors(e); return }
-    onSave(buildItem(), !!editItem)
-    setShowForm(false)
-    setToast({ msg: editItem ? 'Despesa atualizada!' : 'Despesa cadastrada!', type: 'success' })
+    const baseItem = buildItem()
+    onSave(baseItem, !!editItem)
+    if (!editItem && recorrenciaRef.current?.isActive()) {
+      const recLancs = recorrenciaRef.current.getLancamentos(baseItem)
+      recLancs.forEach(l => onSave(l, false))
+      setShowForm(false)
+      setToast({ msg: `Despesa criada + ${recLancs.length} lançamentos recorrentes!`, type: 'success' })
+    } else {
+      setShowForm(false)
+      setToast({ msg: editItem ? 'Despesa atualizada!' : 'Despesa cadastrada!', type: 'success' })
+    }
   }
 
   const salvarRascunho = () => {
@@ -710,6 +721,16 @@ export default function Despesas({ empresa, data, onSave, onDelete }) {
                   })}
                 </div>
               </div>
+
+              {/* Seção 7 — Recorrência */}
+              <RecorrenciaPanel
+                ref={recorrenciaRef}
+                tipo="despesa"
+                baseVencimento={form.vencimento}
+                baseMesAno={form.vencimento ? form.vencimento.slice(0, 7) : undefined}
+                baseValor={parseR(form.valorMasked)}
+                onDataChange={setRecSummary}
+              />
             </div>
 
             {/* Sidebar direita */}
@@ -764,18 +785,46 @@ export default function Despesas({ empresa, data, onSave, onDelete }) {
                   </div>
                 )}
               </div>
+
+              {/* Resumo da Recorrência */}
+              {recSummary?.active && (
+                <div style={{ background: 'var(--card)', borderRadius: 12, border: '2px solid #16a34a40', padding: 20 }}>
+                  <div style={{ fontWeight: 700, fontSize: 11, marginBottom: 14, color: '#16a34a', letterSpacing: '.06em' }}>🔄 RESUMO DA RECORRÊNCIA</div>
+                  {[
+                    { label: 'Lançamentos', val: String(recSummary.count), col: '#16a34a', bold: true },
+                    { label: 'Valor total estimado', val: recSummary.total > 0 ? `R$ ${recSummary.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '—', col: T.red },
+                    { label: 'Período', val: recSummary.periodo },
+                    { label: 'Tipo', val: recSummary.tipo },
+                    { label: 'Reajuste', val: recSummary.reajuste },
+                  ].map(r => (
+                    <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10, fontSize: 13, gap: 8 }}>
+                      <span style={{ color: 'var(--text-sub)', flexShrink: 0 }}>{r.label}</span>
+                      <span style={{ fontWeight: r.bold ? 800 : 600, color: r.col || 'var(--text)', textAlign: 'right', fontSize: r.bold ? 16 : 13 }}>{r.val}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
           {/* Footer fixo */}
           <div style={{ background: 'var(--card)', borderTop: `1px solid var(--border)`, padding: '14px 28px', display: 'flex', gap: 10, alignItems: 'center', position: 'sticky', bottom: 0, zIndex: 10 }}>
             <Btn variant="ghost" onClick={() => setShowForm(false)}>Cancelar</Btn>
-            {editItem && <Btn variant="ghost" onClick={() => duplicarItem(editItem)}>⧉ Duplicar Despesa</Btn>}
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
-              <Btn variant="ghost" style={{ borderColor: T.yellow, color: T.yellow }} onClick={salvarRascunho}>💾 Salvar Rascunho</Btn>
-              <Btn variant="ghost" onClick={salvarENovo}>+ Salvar e Novo</Btn>
-              <Btn variant="danger" onClick={salvar}>✓ Salvar e Fechar</Btn>
-            </div>
+            {!recSummary?.active && editItem && <Btn variant="ghost" onClick={() => duplicarItem(editItem)}>⧉ Duplicar Despesa</Btn>}
+            {recSummary?.active ? (
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
+                <Btn variant="ghost" onClick={() => setShowForm(false)}>Cancelar</Btn>
+                <Btn variant="danger" onClick={salvar}>
+                  ✓ Criar Recorrência — Gerar {recSummary.count} lançamento{recSummary.count !== 1 ? 's' : ''}
+                </Btn>
+              </div>
+            ) : (
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
+                <Btn variant="ghost" style={{ borderColor: T.yellow, color: T.yellow }} onClick={salvarRascunho}>💾 Salvar Rascunho</Btn>
+                <Btn variant="ghost" onClick={salvarENovo}>+ Salvar e Novo</Btn>
+                <Btn variant="danger" onClick={salvar}>✓ Salvar e Fechar</Btn>
+              </div>
+            )}
           </div>
         </div>
       )}
