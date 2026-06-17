@@ -8,7 +8,7 @@ const ICONS_RECEITA = { venda_imoveis: '🏠', locacao: '🔑', alugueis: '🔑'
 
 const EMPTY_CAT = { nome: '', tipo: 'despesa', descricao: '', cor: '#2563eb' }
 
-export default function Categorias({ data }) {
+export default function Categorias({ data, extraCats = [], onSaveCat, onDeleteCat }) {
   const lancamentos = useMemo(() => data.lancamentos || [], [data.lancamentos])
   const [tab, setTab] = useState('Todas')
   const [search, setSearch] = useState('')
@@ -16,13 +16,12 @@ export default function Categorias({ data }) {
   const [form, setForm] = useState(EMPTY_CAT)
   const [isEdit, setIsEdit] = useState(false)
   const [confirm, setConfirm] = useState(null)
-  const [extras, setExtras] = useState([])
 
   const allCats = useMemo(() => {
     const despesas = CATS_DESPESA.map(c => ({ ...c, tipo: 'despesa', descricao: 'Categoria de despesa', icon: ICONS_DESPESA[c.id] || '📂', builtin: true }))
     const receitas = CATS_RECEITA.map(c => ({ ...c, tipo: 'receita', descricao: 'Categoria de receita', icon: ICONS_RECEITA[c.id] || '💵', builtin: true }))
-    return [...despesas, ...receitas, ...extras]
-  }, [extras])
+    return [...despesas, ...receitas, ...extraCats]
+  }, [extraCats])
 
   const usageCount = useMemo(() => {
     const map = {}
@@ -56,16 +55,13 @@ export default function Categorias({ data }) {
 
   const handleSave = () => {
     if (!form.nome.trim()) return
-    if (isEdit) {
-      setExtras(prev => prev.map(c => c.id === form.id ? form : c))
-    } else {
-      setExtras(prev => [...prev, { ...form, id: uid(), builtin: false, icon: '📂' }])
-    }
+    const cat = isEdit ? form : { ...form, id: uid(), builtin: false, icon: '📂' }
+    if (onSaveCat) onSaveCat(cat, isEdit)
     setModal(false)
   }
 
   const handleDelete = id => {
-    setExtras(prev => prev.filter(c => c.id !== id))
+    if (onDeleteCat) onDeleteCat(id)
     setConfirm(null)
   }
 

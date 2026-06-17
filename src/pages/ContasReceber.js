@@ -7,7 +7,8 @@ import * as XLSX from 'xlsx'
 
 const COLORS = ['#16a34a','#2563eb','#7c3aed','#ea580c','#0891b2','#9ca3af']
 
-export default function ContasReceber({ data, onSave, setPage }) {
+export default function ContasReceber({ data, onSave, setPage, extraCats = [] }) {
+  const catsReceita = useMemo(() => [...CATS_RECEITA, ...extraCats.filter(c => c.tipo === 'receita')], [extraCats])
   const [filter, setFilter] = useState(() => loadSavedFilter('x8_filter_contas_receber') || defaultFilter())
   const [search, setSearch]  = useState('')
 
@@ -45,7 +46,7 @@ export default function ContasReceber({ data, onSave, setPage }) {
     { key: 'desc', label: 'Descrição', render: v => <span style={{ fontWeight: 600, fontSize: 13 }}>{v}</span> },
     { key: 'cliente', label: 'Cliente', render: v => <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>{v || '—'}</span> },
     { key: 'catNome', label: 'Categoria', render: (v, row) => {
-      const ci = CATS_RECEITA.findIndex(c => c.id === row.cat)
+      const ci = catsReceita.findIndex(c => c.id === row.cat)
       return <span style={{ background: (COLORS[ci >= 0 ? ci % COLORS.length : 0]) + '20', color: COLORS[ci >= 0 ? ci % COLORS.length : 0], borderRadius: 6, padding: '2px 8px', fontSize: 12, fontWeight: 600 }}>{v}</span>
     }},
     { key: 'centroCusto', label: 'Centro de Custo', render: v => <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{v || '—'}</span> },
@@ -78,7 +79,7 @@ export default function ContasReceber({ data, onSave, setPage }) {
         </div>
       </div>
 
-      <AdvancedFilters tipo="receita" cats={CATS_RECEITA} filter={filter} onApply={setFilter} storageKey="x8_filter_contas_receber" />
+      <AdvancedFilters tipo="receita" cats={catsReceita} filter={filter} onApply={setFilter} storageKey="x8_filter_contas_receber" />
 
       <div className="g-4" style={{ marginBottom: 22 }}>
         <KpiCard icon="📥" iconBg={T.greenL}  label="Total recebíveis" value={fmt(tTotal)} />

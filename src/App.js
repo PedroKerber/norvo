@@ -35,6 +35,7 @@ export default function App() {
   const [page, setPage] = useState('dashboard')
   const [appData, setAppData] = useState(() => initData())
   const [empresas, setEmpresas] = useState(EMPRESAS)
+  const [extraCats, setExtraCats] = useState(() => { try { return JSON.parse(localStorage.getItem('x8_cats') || '[]') } catch { return [] } })
   const [loading, setLoading] = useState(true)
   const [perfilFoto, setPerfilFoto] = useState(() => localStorage.getItem('x8_foto') || '')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('x8_sidebar') === '1')
@@ -180,6 +181,22 @@ export default function App() {
     setAppData(prev => ({ ...prev, [newEmp.id]: { lancamentos: [], metas: [], mesFechado: false } }))
   }, [usuario])
 
+  const handleSaveCat = useCallback((cat, isEdit) => {
+    setExtraCats(prev => {
+      const next = isEdit ? prev.map(c => c.id === cat.id ? cat : c) : [...prev, cat]
+      try { localStorage.setItem('x8_cats', JSON.stringify(next)) } catch {}
+      return next
+    })
+  }, [])
+
+  const handleDeleteCat = useCallback((id) => {
+    setExtraCats(prev => {
+      const next = prev.filter(c => c.id !== id)
+      try { localStorage.setItem('x8_cats', JSON.stringify(next)) } catch {}
+      return next
+    })
+  }, [])
+
   const handleReset = useCallback(async () => {
     if (usuario) {
       await deleteAllLancamentos(usuario.id)
@@ -219,7 +236,7 @@ export default function App() {
     )
   }
 
-  const sharedProps = { empresa, data: empData, setPage, onSave: handleSave, onDelete: handleDelete, onSaveBatch: handleSaveBatch }
+  const sharedProps = { empresa, data: empData, setPage, onSave: handleSave, onDelete: handleDelete, onSaveBatch: handleSaveBatch, extraCats }
 
   const renderPage = () => {
     if (PLACEHOLDER_PAGES.includes(page)) return <Placeholder page={page} />
@@ -234,7 +251,7 @@ export default function App() {
       case 'importar': return <Importar empresa={empresa} onImport={handleImport} />
       case 'relatorios': return <Relatorios {...sharedProps} />
       case 'empresas': return <Empresas setPage={setPage} empresas={empresas} onSaveEmpresa={handleSaveEmpresa} />
-      case 'categorias': return <Categorias {...sharedProps} />
+      case 'categorias': return <Categorias {...sharedProps} onSaveCat={handleSaveCat} onDeleteCat={handleDeleteCat} />
       case 'centro_custo': return <CentroCusto {...sharedProps} />
       case 'usuarios': return <Usuarios usuario={usuario} />
       case 'configuracoes': return <Configuracoes usuario={usuario} onLogout={handleLogout} empresa={empresa} onPerfilUpdate={handlePerfilUpdate} setPage={setPage} onReset={handleReset} />

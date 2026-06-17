@@ -86,7 +86,9 @@ function newForm() {
   }
 }
 
-export default function Receitas({ empresa, data, onSave, onDelete, onSaveBatch }) {
+export default function Receitas({ empresa, data, onSave, onDelete, onSaveBatch, extraCats = [] }) {
+  const catsReceita = useMemo(() => [...CATS_RECEITA, ...extraCats.filter(c => c.tipo === 'receita')], [extraCats])
+
   // List state
   const [filter, setFilter] = useState(() => loadSavedFilter('x8_filter_receitas') || defaultFilter())
   const [search, setSearch] = useState('')
@@ -174,7 +176,7 @@ export default function Receitas({ empresa, data, onSave, onDelete, onSaveBatch 
   }
 
   const buildItem = (extra = {}) => {
-    const cat = CATS_RECEITA.find(c => c.id === form.cat)
+    const cat = catsReceita.find(c => c.id === form.cat)
     return {
       ...form,
       id: editItem ? editItem.id : uid(),
@@ -336,7 +338,7 @@ export default function Receitas({ empresa, data, onSave, onDelete, onSaveBatch 
     { key: 'vencimento', label: 'Vencimento', render: (v, row) => <span style={{ fontSize: 13, color: row.status === 'Atrasada' ? T.red : 'var(--text)' }}>{fd(v || row.data)}</span> },
     { key: 'desc', label: 'Descrição', render: v => <span style={{ fontWeight: 600, fontSize: 13 }}>{v}</span> },
     { key: 'cliente', label: 'Cliente', render: v => <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>{v || '—'}</span> },
-    { key: 'catNome', label: 'Categoria', render: (v, row) => { const ci = CATS_RECEITA.findIndex(c => c.id === row.cat); const cor = COLORS[ci >= 0 ? ci % COLORS.length : 0]; return <Badge label={v} color={cor} /> } },
+    { key: 'catNome', label: 'Categoria', render: (v, row) => { const ci = catsReceita.findIndex(c => c.id === row.cat); const cor = COLORS[ci >= 0 ? ci % COLORS.length : 0]; return <Badge label={v} color={cor} /> } },
     { key: 'centroCusto', label: 'Centro', render: v => <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>{v || '—'}</span> },
     { key: 'valor', label: 'Valor', render: (v, row) => <span style={{ fontWeight: 700, fontSize: 14, color: row.status === 'Atrasada' ? T.red : T.green }}>{fmt(v)}</span> },
     { key: 'status', label: 'Status', render: v => <StatusBadge status={v} /> },
@@ -361,7 +363,7 @@ export default function Receitas({ empresa, data, onSave, onDelete, onSaveBatch 
   ]
 
   const valorNum  = parseR(form.valorMasked)
-  const resumoCat = CATS_RECEITA.find(c => c.id === form.cat)
+  const resumoCat = catsReceita.find(c => c.id === form.cat)
   const hasErrors = Object.values(errors).some(Boolean)
 
   return (
@@ -390,7 +392,7 @@ export default function Receitas({ empresa, data, onSave, onDelete, onSaveBatch 
         </div>
       </div>
 
-      <AdvancedFilters tipo="receita" cats={CATS_RECEITA} filter={filter} onApply={setFilter} storageKey="x8_filter_receitas" />
+      <AdvancedFilters tipo="receita" cats={catsReceita} filter={filter} onApply={setFilter} storageKey="x8_filter_receitas" />
 
       <div className="g-4">
         <KpiCard icon="$"  iconBg={T.greenL}  label="Total de receitas"    value={fmt(tTotal)} />
@@ -533,7 +535,7 @@ export default function Receitas({ empresa, data, onSave, onDelete, onSaveBatch 
                       <select
                         value={form.cat}
                         onChange={e => {
-                          const cat = CATS_RECEITA.find(c => c.id === e.target.value)
+                          const cat = catsReceita.find(c => c.id === e.target.value)
                           sf('cat', e.target.value)
                           sf('catNome', cat?.nome || '')
                           if (CAT_CENTRO[e.target.value]) sf('centroCusto', CAT_CENTRO[e.target.value])
@@ -543,7 +545,7 @@ export default function Receitas({ empresa, data, onSave, onDelete, onSaveBatch 
                         style={{ ...iStyle(errors.cat), appearance: 'none', paddingRight: 28 }}
                       >
                         <option value="">Selecione uma categoria</option>
-                        {CATS_RECEITA.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                        {catsReceita.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
                       </select>
                       <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-muted)', fontSize: 12 }}>▾</span>
                     </div>

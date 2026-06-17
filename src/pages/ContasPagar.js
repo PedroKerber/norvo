@@ -7,7 +7,8 @@ import * as XLSX from 'xlsx'
 
 const COLORS = ['#2563eb','#dc2626','#7c3aed','#16a34a','#ea580c','#0891b2','#ca8a04','#9ca3af']
 
-export default function ContasPagar({ data, onSave, setPage }) {
+export default function ContasPagar({ data, onSave, setPage, extraCats = [] }) {
+  const catsDespesa = useMemo(() => [...CATS_DESPESA, ...extraCats.filter(c => c.tipo === 'despesa')], [extraCats])
   const [filter, setFilter] = useState(() => loadSavedFilter('x8_filter_contas_pagar') || defaultFilter())
   const [search, setSearch]  = useState('')
 
@@ -45,7 +46,7 @@ export default function ContasPagar({ data, onSave, setPage }) {
     { key: 'desc', label: 'Descrição', render: v => <span style={{ fontWeight: 600, fontSize: 13 }}>{v}</span> },
     { key: 'fornecedor', label: 'Fornecedor', render: v => <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>{v || '—'}</span> },
     { key: 'catNome', label: 'Categoria', render: (v, row) => {
-      const ci = CATS_DESPESA.findIndex(c => c.id === row.cat)
+      const ci = catsDespesa.findIndex(c => c.id === row.cat)
       return <span style={{ background: (COLORS[ci >= 0 ? ci % COLORS.length : 0]) + '20', color: COLORS[ci >= 0 ? ci % COLORS.length : 0], borderRadius: 6, padding: '2px 8px', fontSize: 12, fontWeight: 600 }}>{v}</span>
     }},
     { key: 'centroCusto', label: 'Centro de Custo', render: v => <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{v || '—'}</span> },
@@ -78,7 +79,7 @@ export default function ContasPagar({ data, onSave, setPage }) {
         </div>
       </div>
 
-      <AdvancedFilters tipo="despesa" cats={CATS_DESPESA} filter={filter} onApply={setFilter} storageKey="x8_filter_contas_pagar" />
+      <AdvancedFilters tipo="despesa" cats={catsDespesa} filter={filter} onApply={setFilter} storageKey="x8_filter_contas_pagar" />
 
       <div className="g-4" style={{ marginBottom: 22 }}>
         <KpiCard icon="📤" iconBg={T.redL}    label="Total no período" value={fmt(tTotal)} />
