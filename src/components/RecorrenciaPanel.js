@@ -142,7 +142,7 @@ const RecorrenciaPanel = forwardRef(function RecorrenciaPanel(
         mesAno: ym,
         vencimento,
         valor: Math.round(valor * 100) / 100,
-        status: tipo === 'despesa' ? 'A Pagar' : 'A Receber',
+        status: tipo === 'despesa' ? 'A Pagar' : 'A receber',
         parcela: opcoes.gerarParcelas ? { atual: idx + 1, total: sorted.length } : null,
       }
     })

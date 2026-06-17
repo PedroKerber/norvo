@@ -119,6 +119,16 @@ export default function App() {
     }))
   }, [empresa, usuario])
 
+  const handleSaveBatch = useCallback(async (items) => {
+    if (!items || items.length === 0) return
+    const empId = items[0].empId || empresa?.id
+    await saveLancamentos(items, usuario.id)
+    setAppData(prev => ({
+      ...prev,
+      [empId]: { ...prev[empId], lancamentos: [...(prev[empId]?.lancamentos || []), ...items] }
+    }))
+  }, [empresa, usuario])
+
   const handleDelete = useCallback(async (id, tipo) => {
     if (!empresa) return
     const empId = empresa.id
@@ -179,7 +189,7 @@ export default function App() {
     )
   }
 
-  const sharedProps = { empresa, data: empData, setPage, onSave: handleSave, onDelete: handleDelete }
+  const sharedProps = { empresa, data: empData, setPage, onSave: handleSave, onDelete: handleDelete, onSaveBatch: handleSaveBatch }
 
   const renderPage = () => {
     if (PLACEHOLDER_PAGES.includes(page)) return <Placeholder page={page} />

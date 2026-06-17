@@ -72,7 +72,7 @@ function newForm() {
   }
 }
 
-export default function Despesas({ empresa, data, onSave, onDelete }) {
+export default function Despesas({ empresa, data, onSave, onDelete, onSaveBatch }) {
   // List state
   const [comp, setComp] = useState(COMPETENCIA_DEFAULT)
   const [search, setSearch] = useState('')
@@ -180,13 +180,20 @@ export default function Despesas({ empresa, data, onSave, onDelete }) {
     const e = validar()
     if (Object.keys(e).length) { setErrors(e); return }
     const baseItem = buildItem()
-    onSave(baseItem, !!editItem)
     if (!editItem && recorrenciaRef.current?.isActive()) {
       const recLancs = recorrenciaRef.current.getLancamentos(baseItem)
-      recLancs.forEach(l => onSave(l, false))
-      setShowForm(false)
-      setToast({ msg: `Despesa criada + ${recLancs.length} lançamentos recorrentes!`, type: 'success' })
+      if (recLancs.length > 0 && onSaveBatch) {
+        onSaveBatch([baseItem, ...recLancs])
+        setShowForm(false)
+        setToast({ msg: `${1 + recLancs.length} lançamentos gerados com sucesso!`, type: 'success' })
+      } else {
+        onSave(baseItem, false)
+        recLancs.forEach(l => onSave(l, false))
+        setShowForm(false)
+        setToast({ msg: `Despesa criada + ${recLancs.length} lançamentos recorrentes!`, type: 'success' })
+      }
     } else {
+      onSave(baseItem, !!editItem)
       setShowForm(false)
       setToast({ msg: editItem ? 'Despesa atualizada!' : 'Despesa cadastrada!', type: 'success' })
     }
