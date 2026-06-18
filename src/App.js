@@ -34,8 +34,11 @@ export default function App() {
   const isMobile = useMobile()
 
   const [isInviteFlow] = useState(() => {
+    const path = window.location.pathname
     const params = new URLSearchParams(window.location.hash.substring(1))
-    return params.get('type') === 'invite'
+    const type = params.get('type')
+    const errorCode = params.get('error_code')
+    return path === '/ativar-conta' || type === 'invite' || errorCode === 'otp_expired' || errorCode === 'access_denied'
   })
 
   const [usuario, setUsuario] = useState(null)
