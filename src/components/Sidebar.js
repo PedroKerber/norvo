@@ -4,11 +4,11 @@ import { useTheme } from '../context/ThemeContext'
 
 const S = {
   bg: 'var(--sidebar-bg)',
-  active: 'rgba(37,99,235,0.15)',
+  active: 'rgba(244,123,32,0.15)',
   hover: 'rgba(255,255,255,0.06)',
   txt: 'rgba(255,255,255,0.48)',
   txtActive: '#ffffff',
-  accent: '#2563EB',
+  accent: '#F47B20',
   border: 'rgba(255,255,255,0.09)',
   W: 280,
   WC: 82,

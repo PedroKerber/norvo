@@ -322,9 +322,9 @@ export default function Despesas({ empresa, data, onSave, onDelete, onSaveBatch,
   const exportPDF = () => {
     const html = `<html><head><meta charset="utf-8"><style>
       body{font-family:Arial,sans-serif;font-size:11px;margin:28px;color:#111}
-      h1{font-size:18px;margin:0 0 2px;color:#18181B}
+      h1{font-size:18px;margin:0 0 2px;color:#0D2545}
       .sub{color:#666;font-size:12px;margin:0 0 16px}
-      .kpis{display:flex;gap:28px;padding:12px 0;border-top:2px solid #18181B;border-bottom:1px solid #e5e7eb;margin-bottom:16px}
+      .kpis{display:flex;gap:28px;padding:12px 0;border-top:2px solid #0D2545;border-bottom:1px solid #e5e7eb;margin-bottom:16px}
       .kpi .kl{font-size:10px;color:#888;margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px}
       .kpi .kv{font-size:15px;font-weight:700}
       table{width:100%;border-collapse:collapse}
@@ -829,10 +829,10 @@ export default function Despesas({ empresa, data, onSave, onDelete, onSaveBatch,
 
               {/* Resumo da Recorrência */}
               {recSummary?.active && (
-                <div style={{ background: 'var(--card)', borderRadius: 12, border: '2px solid #2563EB40', padding: 20 }}>
-                  <div style={{ fontWeight: 700, fontSize: 11, marginBottom: 14, color: '#2563EB', letterSpacing: '.06em' }}>🔄 RESUMO DA RECORRÊNCIA</div>
+                <div style={{ background: 'var(--card)', borderRadius: 12, border: '2px solid #F47B2040', padding: 20 }}>
+                  <div style={{ fontWeight: 700, fontSize: 11, marginBottom: 14, color: '#F47B20', letterSpacing: '.06em' }}>🔄 RESUMO DA RECORRÊNCIA</div>
                   {[
-                    { label: 'Lançamentos', val: String(recSummary.count), col: '#2563EB', bold: true },
+                    { label: 'Lançamentos', val: String(recSummary.count), col: '#F47B20', bold: true },
                     { label: 'Valor total estimado', val: recSummary.total > 0 ? `R$ ${recSummary.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '—', col: T.red },
                     { label: 'Período', val: recSummary.periodo },
                     { label: 'Tipo', val: recSummary.tipo },

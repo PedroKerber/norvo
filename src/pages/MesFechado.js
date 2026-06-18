@@ -21,8 +21,8 @@ function buildPDF({ empresa, mesLabel, tRec, tDesp, lucro, margem, saldoInicial,
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Segoe UI',Arial,sans-serif;color:#111827;font-size:13px}
-.hdr{background:#18181B;color:#fff;padding:20px 32px;display:flex;justify-content:space-between;align-items:center}
-.logo{font-size:22px;font-weight:900}.logo span{color:#2563eb}
+.hdr{background:#0D2545;color:#fff;padding:20px 32px;display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:22px;font-weight:900}.logo span{color:#F47B20}
 .co{text-align:right}.co h2{font-size:15px;font-weight:700}.co p{font-size:11px;opacity:.7;margin-top:2px}
 .body{padding:24px 32px}
 .st{font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid #e5e7eb;padding-bottom:6px;margin:20px 0 12px}
@@ -36,7 +36,7 @@ td{padding:7px 10px;border-bottom:1px solid #f3f4f6}
 .badge{display:inline-block;padding:1px 7px;border-radius:3px;font-size:10px;font-weight:700}
 .bg{background:#dcfce7;color:#16a34a}.br{background:#fee2e2;color:#dc2626}
 .ftr{background:#f9fafb;border-top:1px solid #e5e7eb;padding:14px 32px;text-align:center;font-size:10px;color:#9ca3af;margin-top:24px}
-@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.hdr{background:#18181B!important}}
+@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.hdr{background:#0D2545!important}}
 </style></head><body>
 <div class="hdr"><div class="logo">Norvo</div>
 <div class="co"><h2>${empresa?.nome||''}</h2><p>CNPJ: ${empresa?.cnpj||''}</p><p>Fechamento de ${mesLabel}</p></div></div>

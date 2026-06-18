@@ -280,7 +280,7 @@ export default function Relatorios({ empresa, data, setPage, extraCats = [] }) {
     const fmt2 = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
     const html = `<html><head><meta charset="utf-8"><style>
       body{font-family:Arial,sans-serif;font-size:11px;margin:28px;color:#111}
-      h1{font-size:19px;margin:0 0 2px}h2{font-size:12px;margin:18px 0 8px;border-bottom:2px solid #2563eb;padding-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+      h1{font-size:19px;margin:0 0 2px}h2{font-size:12px;margin:18px 0 8px;border-bottom:2px solid #F47B20;padding-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
       .sub{color:#666;font-size:11px;margin:0 0 16px}
       .kpis{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
       .kpi{border-radius:8px;padding:10px 14px;flex:1;min-width:110px;border-left:4px solid}

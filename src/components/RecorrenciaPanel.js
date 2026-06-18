@@ -27,7 +27,7 @@ function vencParaMes(baseVenc, ym) {
 const Toggle = ({ checked, onChange }) => (
   <div onClick={() => onChange(!checked)} style={{
     width: 46, height: 26, borderRadius: 13, cursor: 'pointer',
-    background: checked ? '#2563EB' : 'var(--border)',
+    background: checked ? '#F47B20' : 'var(--border)',
     position: 'relative', transition: 'background .2s', flexShrink: 0,
   }}>
     <div style={{
@@ -184,7 +184,7 @@ const RecorrenciaPanel = forwardRef(function RecorrenciaPanel(
     return (
       <div style={{ background: 'var(--card)', borderRadius: 12, border: '1px solid var(--border)', padding: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: '#2563EB18', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>🔄</div>
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: '#F47B2018', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>🔄</div>
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 700, fontSize: 15 }}>Lançamento Recorrente</div>
             <div style={{ color: 'var(--text-sub)', fontSize: 12, marginTop: 2 }}>
@@ -200,14 +200,14 @@ const RecorrenciaPanel = forwardRef(function RecorrenciaPanel(
   return (
     <>
       {/* ── PANEL ATIVO ── */}
-      <div style={{ background: 'var(--card)', borderRadius: 12, border: '2px solid #2563EB40', padding: 20 }}>
+      <div style={{ background: 'var(--card)', borderRadius: 12, border: '2px solid #F47B2040', padding: 20 }}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid var(--border)' }}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: '#2563EB18', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>🔄</div>
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: '#F47B2018', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>🔄</div>
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 700, fontSize: 15 }}>Lançamento Recorrente</div>
-            <div style={{ color: '#2563EB', fontSize: 12, marginTop: 2, fontWeight: 600 }}>
+            <div style={{ color: '#F47B20', fontSize: 12, marginTop: 2, fontWeight: 600 }}>
               Ativo — {mesesSel.length} {mesesSel.length === 1 ? 'mês selecionado' : 'meses selecionados'}
             </div>
           </div>
@@ -283,22 +283,22 @@ const RecorrenciaPanel = forwardRef(function RecorrenciaPanel(
               const sel = mesesSel.includes(ym)
               return (
                 <div key={ym} onClick={() => toggleMes(ym)} style={{
-                  border: `2px solid ${sel ? '#2563EB' : 'var(--border)'}`,
+                  border: `2px solid ${sel ? '#F47B20' : 'var(--border)'}`,
                   borderRadius: 10, padding: '10px 6px', cursor: 'pointer', textAlign: 'center',
-                  background: sel ? '#2563EB18' : 'var(--bg)', transition: 'all .15s',
+                  background: sel ? '#F47B2018' : 'var(--bg)', transition: 'all .15s',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, marginBottom: 3 }}>
-                    {sel && <span style={{ color: '#2563EB', fontSize: 11 }}>✓</span>}
-                    <span style={{ fontWeight: 700, fontSize: 13, color: sel ? '#2563EB' : 'var(--text)' }}>
+                    {sel && <span style={{ color: '#F47B20', fontSize: 11 }}>✓</span>}
+                    <span style={{ fontWeight: 700, fontSize: 13, color: sel ? '#F47B20' : 'var(--text)' }}>
                       {MESES_PT[m - 1].slice(0, 3)}
                     </span>
                   </div>
-                  <div style={{ fontSize: 11, color: sel ? '#2563EB' : 'var(--text-muted)', fontWeight: sel ? 600 : 400 }}>{y}</div>
+                  <div style={{ fontSize: 11, color: sel ? '#F47B20' : 'var(--text-muted)', fontWeight: sel ? 600 : 400 }}>{y}</div>
                 </div>
               )
             })}
           </div>
-          <div style={{ marginTop: 8, fontSize: 12, color: '#2563EB', fontWeight: 600 }}>
+          <div style={{ marginTop: 8, fontSize: 12, color: '#F47B20', fontWeight: 600 }}>
             • {mesesSel.length} {mesesSel.length === 1 ? 'mês selecionado' : 'meses selecionados'}
           </div>
         </div>
