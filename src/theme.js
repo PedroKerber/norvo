@@ -41,12 +41,7 @@ export const T = {
 }
 
 export const fmt = v => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-export const fmtS = v => {
-  const n = v || 0
-  if (Math.abs(n) >= 1e6) return 'R$ ' + (n / 1e6).toFixed(2).replace('.', ',') + 'M'
-  if (Math.abs(n) >= 1e3) return 'R$ ' + (n / 1e3).toFixed(0) + 'k'
-  return fmt(n)
-}
+export const fmtS = v => fmt(v)
 export const fmtPct = v => (v || 0).toFixed(1).replace('.', ',') + '%'
 export const fd = s => s ? s.split('-').reverse().join('/') : ''
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6)

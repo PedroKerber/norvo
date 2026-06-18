@@ -187,7 +187,7 @@ export default function Dashboard({ empresa, data, setPage, onNova, extraCats = 
           <ResponsiveContainer width="100%" height={180}>
             <ComposedChart data={fluxoData.filter((_, i) => i % 3 === 0)} margin={{ top: 4, right: 0, left: -20, bottom: 0 }}>
               <XAxis dataKey="dia" tick={{ fill: T.muted, fontSize: 10 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: T.muted, fontSize: 9 }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v} />
+              <YAxis tick={{ fill: T.muted, fontSize: 9 }} axisLine={false} tickLine={false} tickFormatter={v => v === 0 ? '0' : v.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} />
               <Tooltip contentStyle={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 8, fontSize: 12 }} formatter={v => fmt(v)} />
               <Bar dataKey="entradas" fill={T.green} opacity={0.8} radius={[2, 2, 0, 0]} maxBarSize={12} />
               <Bar dataKey="saidas" fill={T.red} opacity={0.8} radius={[2, 2, 0, 0]} maxBarSize={12} />
