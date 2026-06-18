@@ -293,7 +293,7 @@ export default function App() {
       case 'metas': return <Metas {...sharedProps} />
       case 'importar': return <Importar empresa={empresa} onImport={handleImport} />
       case 'retirada_socios': return <RetiradaSocios {...sharedProps} />
-      case 'relatorios': return <Relatorios {...sharedProps} />
+      case 'relatorios': return <Relatorios {...sharedProps} allData={appData} allEmpresas={empresas} />
       case 'comparativo_empresas': return <ComparativoEmpresas appData={appData} empresas={empresas} />
       case 'empresas': return <Empresas setPage={setPage} empresas={empresas} onSaveEmpresa={handleSaveEmpresa} />
       case 'categorias': return <Categorias {...sharedProps} onSaveCat={handleSaveCat} onDeleteCat={handleDeleteCat} />
