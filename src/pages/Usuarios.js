@@ -114,6 +114,8 @@ export default function Usuarios({ usuario }) {
   const [tempSenha, setTempSenha] = useState('')
   const [senhaAplicando, setSenhaAplicando] = useState(false)
   const [senhaAplicada, setSenhaAplicada] = useState(false)
+  const [inviteLinkModal, setInviteLinkModal] = useState(null)
+  const [linkCopiado, setLinkCopiado] = useState(false)
 
   const [form, setForm] = useState(EMPTY)
   const [formPerms, setFormPerms] = useState(() => defaultPerms('gerente'))
@@ -159,8 +161,9 @@ export default function Usuarios({ usuario }) {
           nome: local.nome || su.nome,
           telefone: local.telefone || '',
           foto: local.foto || '',
-          cargo: local.cargo || 'Analista Financeiro',
-          perfil: local.perfil || (su.email === usuario?.email ? 'master' : 'gerente'),
+          // prefer local (editable by admin) → supabase metadata → default
+          cargo: local.cargo || su.cargo || 'Analista Financeiro',
+          perfil: local.perfil || su.perfil || (su.email === usuario?.email ? 'master' : 'gerente'),
           status: local.status || 'ativo',
           mustChangePassword: local.mustChangePassword || false,
           ultimoAcesso: su.ultimoAcesso ? new Date(su.ultimoAcesso).toLocaleDateString('pt-BR') : '—',
@@ -241,28 +244,39 @@ export default function Usuarios({ usuario }) {
         const inviteRes = await fetch('/api/invite-user', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: form.email, nome: form.nome }),
+          body: JSON.stringify({ email: form.email, nome: form.nome, perfil: form.perfil, cargo: form.cargo }),
         })
         const inviteJson = await inviteRes.json()
-        if (!inviteRes.ok) throw new Error(inviteJson.error || 'Erro ao enviar convite')
+        if (!inviteRes.ok) throw new Error(inviteJson.error || 'Erro ao criar usuário')
 
-        const newUserId = inviteJson.userId
+        const newUserId   = inviteJson.userId
+        const inviteLink  = inviteJson.inviteLink
+
         if (newUserId) {
           await syncPermissions(newUserId, form.empresaIds)
-          const newUser = { ...form, id: newUserId, ultimoAcesso: '—', criadoEm: new Date().toLocaleDateString('pt-BR') }
+          const newUser = { ...form, id: newUserId, emailConfirmado: false, ultimoAcesso: '—', criadoEm: new Date().toLocaleDateString('pt-BR') }
           setUsuarios(p => [...p.filter(u => u.email !== form.email), newUser])
           localStorage.setItem(`x8_perms_${newUserId}`, JSON.stringify(formPerms))
         }
 
         await logAudit('usuario_criado', { email: form.email, perfil: form.perfil, empresas: form.empresaIds })
 
-        const empresasNome = form.empresaIds.map(id => EMPRESAS.find(e => e.id === id)?.nome).filter(Boolean).join(', ')
-        emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-          to_name: form.nome, to_email: form.email, empresa: empresasNome || '',
-          cargo: form.cargo, senha: tempSenha || '(definida pelo administrador)', link: 'https://norvoapp.com.br',
-        }, EMAILJS_PUBLIC_KEY).catch(() => {})
+        // Try EmailJS with the real invite link (non-blocking)
+        if (EMAILJS_SERVICE_ID && inviteLink) {
+          const empresasNome = form.empresaIds.map(id => EMPRESAS.find(e => e.id === id)?.nome).filter(Boolean).join(', ')
+          emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+            to_name: form.nome, to_email: form.email,
+            empresa: empresasNome || '', cargo: form.cargo,
+            link: inviteLink,
+          }, EMAILJS_PUBLIC_KEY).catch(() => {})
+        }
 
-        showToast(`Usuário criado! Convite enviado para ${form.email}.`)
+        // Always show the link so the admin can share it directly
+        if (inviteLink) {
+          setInviteLinkModal({ email: form.email, nome: form.nome, link: inviteLink })
+        } else {
+          showToast(`Usuário criado! Configure o envio de e-mail nas configurações.`)
+        }
       }
     } catch (e) {
       showToast(`Erro: ${e.message}`, false)
@@ -327,11 +341,25 @@ export default function Usuarios({ usuario }) {
   const handleInvite = async (u) => {
     setInviteLoading(u.id); setActionMenu(null)
     try {
-      const res = await fetch('/api/invite-user', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: u.email, nome: u.nome }) })
+      const res  = await fetch('/api/resend-invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: u.email, nome: u.nome }) })
       const json = await res.json()
-      if (!res.ok) throw new Error(json.error || 'Erro desconhecido')
+      if (!res.ok) throw new Error(json.error || 'Erro ao gerar convite')
       await logAudit('convite_enviado', { email: u.email })
-      showToast(`Convite enviado para ${u.email}!`)
+
+      const inviteLink = json.inviteLink
+      if (inviteLink) {
+        // Try EmailJS (non-blocking)
+        if (EMAILJS_SERVICE_ID) {
+          emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+            to_name: u.nome, to_email: u.email,
+            empresa: empNomes(u.empresaIds).join(', '),
+            cargo: u.cargo || '', link: inviteLink,
+          }, EMAILJS_PUBLIC_KEY).catch(() => {})
+        }
+        setInviteLinkModal({ email: u.email, nome: u.nome, link: inviteLink })
+      } else {
+        showToast(`Convite reenviado para ${u.email}!`)
+      }
     } catch (e) {
       showToast(`Erro: ${e.message}`, false)
     } finally {
@@ -357,7 +385,7 @@ export default function Usuarios({ usuario }) {
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Erro ao aplicar senha')
       setSenhaAplicada(true)
-      showToast('Senha aplicada! Jefferson já pode entrar com essa senha.')
+      showToast(`Senha aplicada! ${senhaUser.nome} já pode entrar com essa senha.`)
     } catch (e) {
       showToast(`Erro: ${e.message}`, false)
     } finally {
@@ -915,6 +943,50 @@ export default function Usuarios({ usuario }) {
                 <Btn sm full onClick={() => { setSenhaUser(viewUser); setTempSenha(''); setModalTipo('senha') }}>🔑 Gerar Senha</Btn>
               </div>
             </div>
+          </div>
+        </Overlay>
+      )}
+
+      {/* ── MODAL: LINK DE CONVITE ── */}
+      {inviteLinkModal && (
+        <Overlay onClose={() => { setInviteLinkModal(null); setLinkCopiado(false) }}>
+          <div style={{ background: T.white, borderRadius: 16, padding: 32, width: '100%', maxWidth: 480, boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+              <div style={{ width: 42, height: 42, borderRadius: 10, background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>✅</div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 18 }}>Convite gerado!</div>
+                <div style={{ color: T.sub, fontSize: 13 }}>Para: <strong>{inviteLinkModal.nome}</strong> · {inviteLinkModal.email}</div>
+              </div>
+            </div>
+
+            <div style={{ height: 1, background: T.border, margin: '18px 0' }} />
+
+            <div style={{ fontSize: 13, color: T.sub, marginBottom: 10, fontWeight: 500 }}>Link de ativação (válido por 7 dias):</div>
+            <div style={{ background: T.bg, border: `1.5px solid ${T.border}`, borderRadius: 9, padding: '11px 14px', marginBottom: 14, fontSize: 11, fontFamily: 'monospace', color: T.text, wordBreak: 'break-all', lineHeight: 1.5, userSelect: 'all', cursor: 'text' }}>
+              {inviteLinkModal.link}
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+              <button onClick={() => {
+                navigator.clipboard?.writeText(inviteLinkModal.link).then(() => {
+                  setLinkCopiado(true); setTimeout(() => setLinkCopiado(false), 2000)
+                })
+              }} style={{ flex: 1, background: linkCopiado ? '#f0fdf4' : T.white, border: `1.5px solid ${linkCopiado ? '#16a34a' : T.border}`, borderRadius: 8, padding: '10px', fontSize: 13, fontWeight: 700, cursor: 'pointer', color: linkCopiado ? '#16a34a' : T.text, fontFamily: 'inherit' }}>
+                {linkCopiado ? '✓ Copiado!' : '📋 Copiar link'}
+              </button>
+              <a href={`https://wa.me/?text=${encodeURIComponent(`Olá, ${inviteLinkModal.nome}! Segue seu link de acesso ao Norvo:\n${inviteLinkModal.link}`)}`}
+                target="_blank" rel="noopener noreferrer"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, flex: 1, background: '#25D366', border: 'none', borderRadius: 8, padding: '10px', fontSize: 13, fontWeight: 700, cursor: 'pointer', color: '#fff', textDecoration: 'none' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                WhatsApp
+              </a>
+            </div>
+
+            <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: 8, padding: '10px 14px', fontSize: 12, color: '#92400e', lineHeight: 1.55, marginBottom: 20 }}>
+              <strong>Como funciona:</strong> Ao clicar no link, {inviteLinkModal.nome} definirá uma senha e terá acesso imediato às empresas liberadas. O link expira em <strong>7 dias</strong>.
+            </div>
+
+            <Btn onClick={() => { setInviteLinkModal(null); setLinkCopiado(false) }}>Fechar</Btn>
           </div>
         </Overlay>
       )}

@@ -8,7 +8,7 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido' })
 
-  const { email, nome, perfil, cargo } = req.body || {}
+  const { email, nome } = req.body || {}
   if (!email) return res.status(400).json({ error: 'Email obrigatório' })
 
   const supabaseAdmin = createClient(
@@ -17,17 +17,13 @@ module.exports = async (req, res) => {
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 
-  // generateLink creates the invite WITHOUT sending Supabase's default email.
-  // The actual invite link is returned so we can send a custom email.
+  // generateLink({ type: 'invite' }) works for both new and existing unconfirmed users.
+  // It generates a fresh token without sending Supabase's default email.
   const { data, error } = await supabaseAdmin.auth.admin.generateLink({
     type: 'invite',
     email,
     options: {
-      data: {
-        nome:   nome   || email,
-        perfil: perfil || 'gerente',
-        cargo:  cargo  || '',
-      },
+      data: { nome: nome || email },
       redirectTo: 'https://norvoapp.com.br/ativar-conta',
     },
   })
@@ -36,7 +32,6 @@ module.exports = async (req, res) => {
 
   return res.status(200).json({
     success:    true,
-    userId:     data.user?.id     || null,
     inviteLink: data.properties?.action_link || null,
   })
 }
