@@ -1,15 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
+import { labelSegmento } from './modules'
 
 const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL
 const SUPABASE_KEY = process.env.REACT_APP_SUPABASE_KEY
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
-export const getAllLancamentos = async (userId) => {
+// Acesso por empresa (Fase 4 — Etapa 2): a RLS filtra por empresa via can_access_empresa();
+// user_id segue gravado como created_by (auditoria) e não controla mais o acesso.
+export const getAllLancamentos = async () => {
   const { data, error } = await supabase
     .from('lancamentos')
     .select('*')
-    .eq('user_id', userId)
     .order('data', { ascending: false })
   if (error) throw error
   return data.map(r => ({
@@ -21,11 +23,10 @@ export const getAllLancamentos = async (userId) => {
   }))
 }
 
-export const getLancamentos = async (userId, empresaId) => {
+export const getLancamentos = async (empresaId) => {
   const { data, error } = await supabase
     .from('lancamentos')
     .select('*')
-    .eq('user_id', userId)
     .eq('empresa_id', empresaId)
     .order('data', { ascending: false })
   if (error) throw error
@@ -69,11 +70,10 @@ export const saveLancamentos = async (items, userId) => {
   if (error) throw error
 }
 
-export const getMetas = async (userId, empresaId) => {
+export const getMetas = async (empresaId) => {
   const { data, error } = await supabase
     .from('metas')
     .select('*')
-    .eq('user_id', userId)
     .eq('empresa_id', empresaId)
   if (error) throw error
   return data.map(r => ({
@@ -99,15 +99,76 @@ export const deleteMeta = async (id) => {
   if (error) throw error
 }
 
-export const deleteAllLancamentos = async (userId) => {
-  const { error } = await supabase.from('lancamentos').delete().eq('user_id', userId)
+export const deleteAllLancamentos = async (empresaId) => {
+  const { error } = await supabase.from('lancamentos').delete().eq('empresa_id', empresaId)
   if (error) throw error
 }
 
-export const deleteAllMetas = async (userId) => {
-  const { error } = await supabase.from('metas').delete().eq('user_id', userId)
+export const deleteAllMetas = async (empresaId) => {
+  const { error } = await supabase.from('metas').delete().eq('empresa_id', empresaId)
   if (error) throw error
 }
+
+// ── Empresas (Fase 4 — migração para Supabase) ─────────────────────────────
+const initialsOf = (nome) =>
+  (nome || '').split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || 'EM'
+
+const mapEmpresaRow = (r) => ({
+  id: r.id,
+  nome: r.nome,
+  cnpj: r.cnpj || '',
+  segmento: r.segmento || '',
+  setor: labelSegmento(r.segmento),
+  plano: r.plano || 'basico',
+  cor: r.cor || '#16a34a',
+  logo: r.logo || '',
+  initials: r.initials || initialsOf(r.nome),
+  status: r.status || 'ativa',
+})
+
+const toEmpresaRow = (emp, ownerUserId) => ({
+  id: emp.id,
+  ...(ownerUserId ? { owner_user_id: ownerUserId } : {}),
+  nome: emp.nome,
+  cnpj: emp.cnpj || null,
+  segmento: emp.segmento || null,
+  plano: emp.plano || 'basico',
+  cor: emp.cor || '#16a34a',
+  logo: emp.logo || null,
+  initials: emp.initials || initialsOf(emp.nome),
+  status: emp.status || 'ativa',
+})
+
+// Retorna apenas as empresas que o usuário pode acessar (a RLS aplica o filtro)
+export const getEmpresas = async () => {
+  const { data, error } = await supabase
+    .from('empresas')
+    .select('*')
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return (data || []).map(mapEmpresaRow)
+}
+
+// Semeia as empresas-demo na 1ª carga, preservando os IDs. Idempotente.
+export const seedEmpresas = async (empresasArr, ownerUserId) => {
+  const rows = empresasArr.map(e => toEmpresaRow(e, ownerUserId))
+  const { error } = await supabase
+    .from('empresas')
+    .upsert(rows, { onConflict: 'id', ignoreDuplicates: true })
+  if (error) throw error
+}
+
+export const saveEmpresa = async (emp, ownerUserId) => {
+  const { error } = await supabase.from('empresas').insert(toEmpresaRow(emp, ownerUserId))
+  if (error) throw error
+}
+
+export const updateEmpresa = async (id, fields) => {
+  const { error } = await supabase.from('empresas').update(fields).eq('id', id)
+  if (error) throw error
+}
+
+export const setEmpresaStatus = async (id, status) => updateEmpresa(id, { status })
 
 export const signIn = async (email, senha) => {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password: senha })

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { T, fmt } from '../theme'
 import { useTheme } from '../context/ThemeContext'
+import { SEGMENTOS, labelSegmento } from '../modules'
 
 // ── Icons ────────────────────────────────────────────────────────
 function SunIcon() {
@@ -212,11 +213,10 @@ function DetalheModal({ emp, onClose, onEntrar }) {
 }
 
 // ── NovaEmpresaModal ─────────────────────────────────────────────
-const SETORES = ['Imobiliário', 'Construção', 'Incorporação', 'Academia/Esportes', 'Tecnologia', 'Comércio', 'Indústria', 'Serviços', 'Saúde', 'Educação', 'Agronegócio', 'Outro']
 const COR_OPTS = ['#16a34a', '#2563eb', '#7c3aed', '#ea580c', '#dc2626', '#0891b2', '#ca8a04', '#0d9488']
 
 function NovaEmpresaModal({ onClose, onSave }) {
-  const [form, setForm] = useState({ nome: '', cnpj: '', setor: '', cor: '#16a34a' })
+  const [form, setForm] = useState({ nome: '', cnpj: '', segmento: '', cor: '#16a34a' })
   const [erros, setErros] = useState({})
   const [saving, setSaving] = useState(false)
 
@@ -227,7 +227,7 @@ function NovaEmpresaModal({ onClose, onSave }) {
     if (!form.nome.trim()) e.nome = 'Nome é obrigatório'
     const digits = form.cnpj.replace(/\D/g, '')
     if (!digits || digits.length !== 14) e.cnpj = 'CNPJ deve ter 14 dígitos'
-    if (!form.setor) e.setor = 'Selecione o segmento'
+    if (!form.segmento) e.segmento = 'Selecione o segmento'
     return e
   }
 
@@ -268,7 +268,7 @@ function NovaEmpresaModal({ onClose, onSave }) {
             </div>
             <div>
               <div style={{ fontWeight: 700, fontSize: 15, color: T.text }}>{form.nome || 'Nome da empresa'}</div>
-              <div style={{ color: T.muted, fontSize: 12 }}>{form.setor || 'Segmento'}</div>
+              <div style={{ color: T.muted, fontSize: 12 }}>{form.segmento ? labelSegmento(form.segmento) : 'Segmento'}</div>
             </div>
           </div>
 
@@ -292,14 +292,14 @@ function NovaEmpresaModal({ onClose, onSave }) {
           <div>
             <label style={{ display: 'block', fontWeight: 600, fontSize: 12, color: T.sub, marginBottom: 5 }}>SEGMENTO *</label>
             <div style={{ position: 'relative' }}>
-              <select value={form.setor} onChange={e => { sf('setor', e.target.value); if (erros.setor) setErros(p=>({...p,setor:''})) }}
-                style={{ ...iSty(erros.setor), appearance: 'none', paddingRight: 28 }}>
+              <select value={form.segmento} onChange={e => { sf('segmento', e.target.value); if (erros.segmento) setErros(p=>({...p,segmento:''})) }}
+                style={{ ...iSty(erros.segmento), appearance: 'none', paddingRight: 28 }}>
                 <option value="">Selecione o segmento</option>
-                {SETORES.map(s => <option key={s} value={s}>{s}</option>)}
+                {SEGMENTOS.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
               </select>
               <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: T.muted, fontSize: 12 }}>▾</span>
             </div>
-            {erros.setor && <div style={{ color: T.red, fontSize: 11, marginTop: 3 }}>⚠ {erros.setor}</div>}
+            {erros.segmento && <div style={{ color: T.red, fontSize: 11, marginTop: 3 }}>⚠ {erros.segmento}</div>}
           </div>
 
           {/* Cor */}

@@ -3,7 +3,7 @@ import { useMobile } from './context/MobileContext'
 import { T, uid } from './theme'
 import { initData, EMPRESAS, CATS_KZL } from './data'
 import { getModuloStatus, labelSegmento, labelPlano, getLimitesPlano } from './modules'
-import { supabase, getAllLancamentos, getLancamentos, saveLancamento, deleteLancamento, saveLancamentos, getMetas, saveMeta, deleteMeta, signIn, signOut, deleteAllLancamentos, deleteAllMetas } from './supabase'
+import { supabase, getAllLancamentos, getLancamentos, saveLancamento, deleteLancamento, saveLancamentos, getMetas, saveMeta, deleteMeta, signIn, signOut, deleteAllLancamentos, deleteAllMetas, getEmpresas, seedEmpresas, saveEmpresa, updateEmpresa, setEmpresaStatus } from './supabase'
 
 import Sidebar from './components/Sidebar'
 import TopBar from './components/TopBar'
@@ -85,45 +85,61 @@ export default function App() {
   useEffect(() => { localStorage.setItem('x8_last_page', page) }, [page])
   useEffect(() => { if (empresa) localStorage.setItem('x8_last_empresa', empresa.id) }, [empresa])
 
-  // Carrega empresas customizadas do localStorage e restaura última empresa selecionada
+  // Carrega empresas do Supabase (com seed na 1ª carga) e restaura última empresa.
+  // Fallback para localStorage/EMPRESAS durante a transição (Fase 4).
   useEffect(() => {
     if (!usuario) return
-    let all = [...EMPRESAS]
-    try {
-      const custom = JSON.parse(localStorage.getItem(`x8_empresas_${usuario.id}`) || '[]')
-      if (custom.length > 0) all = [...EMPRESAS, ...custom]
-    } catch {}
+
+    const customLS = (() => {
+      try { return JSON.parse(localStorage.getItem(`x8_empresas_${usuario.id}`) || '[]') } catch { return [] }
+    })()
+    const fallbackAll = [...EMPRESAS, ...customLS]
+    const isOwner = !usuario.perfil || usuario.perfil === 'master' || usuario.perfil === 'admin'
 
     const applyEmpresas = (list) => {
       setEmpresas(list)
       const lastId = localStorage.getItem('x8_last_empresa')
       if (lastId) {
         const found = list.find(e => e.id === lastId)
-        if (found) setEmpresa(found)
+        if (found && found.status !== 'inativa') setEmpresa(found)
       }
     }
 
-    // Usuários não-master/admin só veem as empresas às quais têm acesso
-    if (usuario.perfil && usuario.perfil !== 'master' && usuario.perfil !== 'admin') {
-      supabase.from('user_empresa_access')
-        .select('empresa_id')
-        .eq('collaborator_user_id', usuario.id)
-        .then(({ data: accessData }) => {
-          if (accessData && accessData.length > 0) {
-            const ids = new Set(accessData.map(r => r.empresa_id))
-            const accessible = all.filter(e => ids.has(e.id))
-            applyEmpresas(accessible.length > 0 ? accessible : all)
-          } else {
-            applyEmpresas(all)
+    ;(async () => {
+      try {
+        let emps = await getEmpresas()
+        if (isOwner) {
+          // Correção segura e idempotente: leva ao Supabase as empresas que ainda
+          // só existem no localStorage (demo na 1ª carga + órfãs do dono), preservando
+          // id e owner. Nunca apaga nem sobrescreve (upsert ignoreDuplicates).
+          const existentes = new Set(emps.map(e => e.id))
+          const aSemear = []
+          if (emps.length === 0) aSemear.push(...EMPRESAS)
+          customLS.forEach(e => { if (e?.id && !existentes.has(e.id)) aSemear.push(e) })
+          if (aSemear.length > 0) {
+            await seedEmpresas(aSemear, usuario.id)
+            emps = await getEmpresas()
           }
-        })
-        .catch(() => applyEmpresas(all))
-    } else {
-      applyEmpresas(all)
-    }
+        }
+        applyEmpresas(emps.length > 0 ? emps : fallbackAll)
+      } catch {
+        // tabela ainda não criada / erro de rede → comportamento anterior
+        if (!isOwner) {
+          try {
+            const { data } = await supabase.from('user_empresa_access')
+              .select('empresa_id').eq('collaborator_user_id', usuario.id)
+            const ids = new Set((data || []).map(r => r.empresa_id))
+            const accessible = fallbackAll.filter(e => ids.has(e.id))
+            applyEmpresas(accessible.length > 0 ? accessible : fallbackAll)
+          } catch { applyEmpresas(fallbackAll) }
+        } else {
+          applyEmpresas(fallbackAll)
+        }
+      }
+    })()
 
     // Pré-carrega todos os lançamentos para exibir stats na tela de seleção
-    getAllLancamentos(usuario.id).then(lancs => {
+    getAllLancamentos().then(lancs => {
       const byEmp = {}
       lancs.forEach(l => {
         if (!byEmp[l.empId]) byEmp[l.empId] = []
@@ -142,17 +158,17 @@ export default function App() {
   // Carrega dados da empresa selecionada do banco
   useEffect(() => {
     if (!usuario || !empresa) return
-    const userId = usuario.id
     const empId = empresa.id
     Promise.all([
-      getLancamentos(userId, empId),
-      getMetas(userId, empId),
+      getLancamentos(empId),
+      getMetas(empId),
     ]).then(([lancamentos, metas]) => {
       setAppData(prev => ({ ...prev, [empId]: { ...prev[empId], lancamentos, metas } }))
     }).catch(console.error)
   }, [usuario, empresa])
 
   const empData = empresa ? (appData[empresa.id] || { lancamentos: [], metas: [] }) : { lancamentos: [], metas: [] }
+  const empresasAtivas = empresas.filter(e => e.status !== 'inativa')
 
   const handleLogin = useCallback(async (email, senha) => {
     const user = await signIn(email, senha)
@@ -245,24 +261,27 @@ export default function App() {
     setAppData(prev => ({ ...prev, [empresa.id]: { ...prev[empresa.id], mesFechado: false } }))
   }, [empresa])
 
-  const handleSaveEmpresa = useCallback((form, onLimitError) => {
+  const handleSaveEmpresa = useCallback(async (form, onLimitError) => {
     const limites = getLimitesPlano(empresa?.plano)
-    if (empresas.length >= limites.empresas) {
+    // limite só se aplica dentro do app (empresa selecionada); na tela de seleção, libera
+    if (empresa && empresas.filter(e => e.status !== 'inativa').length >= limites.empresas) {
       if (onLimitError) onLimitError(limites.empresas, labelPlano(empresa?.plano))
       return
     }
-    const words = form.nome.trim().split(/\s+/).filter(Boolean)
+    const words = (form.nome || '').trim().split(/\s+/).filter(Boolean)
     const initials = words.slice(0, 2).map(w => w[0].toUpperCase()).join('') || 'EM'
     const newEmp = {
       id: uid(),
-      nome: form.nome.trim(),
+      nome: (form.nome || '').trim(),
       initials,
-      cnpj: form.cnpj.trim(),
+      cnpj: (form.cnpj || '').trim(),
       cor: form.cor || '#16a34a',
       segmento: form.segmento || '',
       setor: labelSegmento(form.segmento),
       plano: 'basico',
+      status: 'ativa',
     }
+    try { await saveEmpresa(newEmp, usuario.id) } catch {}
     try {
       const saved = JSON.parse(localStorage.getItem(`x8_empresas_${usuario.id}`) || '[]')
       localStorage.setItem(`x8_empresas_${usuario.id}`, JSON.stringify([...saved, newEmp]))
@@ -270,6 +289,35 @@ export default function App() {
     setEmpresas(prev => [...prev, newEmp])
     setAppData(prev => ({ ...prev, [newEmp.id]: { lancamentos: [], metas: [], mesFechado: false } }))
   }, [usuario, empresa, empresas])
+
+  const handleUpdateEmpresa = useCallback(async (id, form) => {
+    const words = (form.nome || '').trim().split(/\s+/).filter(Boolean)
+    const initials = words.slice(0, 2).map(w => w[0].toUpperCase()).join('') || 'EM'
+    const dbPatch = {
+      nome: (form.nome || '').trim(),
+      cnpj: (form.cnpj || '').trim(),
+      segmento: form.segmento || '',
+      cor: form.cor || '#16a34a',
+      initials,
+    }
+    const statePatch = { ...dbPatch, setor: labelSegmento(form.segmento) }
+    try { await updateEmpresa(id, dbPatch) } catch {}
+    setEmpresas(prev => prev.map(e => e.id === id ? { ...e, ...statePatch } : e))
+    setEmpresa(prev => (prev && prev.id === id ? { ...prev, ...statePatch } : prev))
+    try {
+      const saved = JSON.parse(localStorage.getItem(`x8_empresas_${usuario.id}`) || '[]')
+      localStorage.setItem(`x8_empresas_${usuario.id}`, JSON.stringify(saved.map(e => e.id === id ? { ...e, ...statePatch } : e)))
+    } catch {}
+  }, [usuario])
+
+  const handleSetEmpresaStatus = useCallback(async (id, status) => {
+    try { await setEmpresaStatus(id, status) } catch {}
+    setEmpresas(prev => prev.map(e => e.id === id ? { ...e, status } : e))
+    try {
+      const saved = JSON.parse(localStorage.getItem(`x8_empresas_${usuario.id}`) || '[]')
+      localStorage.setItem(`x8_empresas_${usuario.id}`, JSON.stringify(saved.map(e => e.id === id ? { ...e, status } : e)))
+    } catch {}
+  }, [usuario])
 
   const handleSaveCat = useCallback((cat, isEdit) => {
     setExtraCats(prev => {
@@ -288,15 +336,12 @@ export default function App() {
   }, [])
 
   const handleReset = useCallback(async () => {
-    if (usuario) {
-      await deleteAllLancamentos(usuario.id)
-      await deleteAllMetas(usuario.id)
-    }
-    localStorage.removeItem('x8_notifs')
-    localStorage.removeItem('x8_ultimas')
-    localStorage.setItem('x8_data_reset', '1')
-    setAppData(initData())
-  }, [usuario])
+    if (!empresa) return
+    // Reset por empresa atual (Fase 4 — Etapa 2): não afeta as demais empresas
+    await deleteAllLancamentos(empresa.id)
+    await deleteAllMetas(empresa.id)
+    setAppData(prev => ({ ...prev, [empresa.id]: { lancamentos: [], metas: [], mesFechado: false } }))
+  }, [empresa])
 
   if (isInviteFlow) return <AtivarConta />
 
@@ -322,7 +367,7 @@ export default function App() {
         onSelect={emp => { setEmpresa(emp); setPage('dashboard') }}
         data={appData}
         onLogout={handleLogout}
-        empresas={empresas}
+        empresas={empresasAtivas}
         onSaveEmpresa={handleSaveEmpresa}
       />
     )
@@ -399,7 +444,7 @@ export default function App() {
       case 'retirada_socios': return <RetiradaSocios {...sharedProps} />
       case 'relatorios': return <Relatorios {...sharedProps} allData={appData} allEmpresas={empresas} />
       case 'comparativo_empresas': return <ComparativoEmpresas appData={appData} empresas={empresas} />
-      case 'empresas': return <Empresas setPage={setPage} empresas={empresas} onSaveEmpresa={handleSaveEmpresa} plano={empresa?.plano} limiteEmpresas={getLimitesPlano(empresa?.plano).empresas} />
+      case 'empresas': return <Empresas setPage={setPage} empresas={empresas} onSaveEmpresa={handleSaveEmpresa} onUpdateEmpresa={handleUpdateEmpresa} onSetStatus={handleSetEmpresaStatus} plano={empresa?.plano} limiteEmpresas={getLimitesPlano(empresa?.plano).empresas} />
       case 'meu_plano': return <MeuPlano empresa={empresa} empresas={empresas} usuario={usuario} setPage={setPage} />
       case 'categorias': return <Categorias {...sharedProps} onSaveCat={handleSaveCat} onDeleteCat={handleDeleteCat} />
       case 'centro_custo': return <CentroCusto {...sharedProps} />
@@ -436,7 +481,7 @@ export default function App() {
           setPage={setPage}
           sidebarWidth={isMobile ? 0 : sidebarW}
           isMobile={isMobile}
-          empresas={empresas}
+          empresas={empresasAtivas}
         />
         <main style={{ flex: 1, marginTop: 60, padding: isMobile ? '16px 14px calc(80px + env(safe-area-inset-bottom, 0px))' : '28px 28px 40px', overflowX: 'hidden' }}>
           {renderPage()}
