@@ -265,7 +265,7 @@ export default function Dashboard({ empresa, data, setPage }) {
       items.push({ texto: `${fmt(contasPagar)} em contas a pagar ou atrasadas — monitore os vencimentos.`, pos: false })
     items.push({ texto: lucro >= 0 ? `Resultado positivo de ${fmt(lucro)} no período.` : `Resultado negativo de ${fmt(Math.abs(lucro))} — revisão de custos recomendada.`, pos: lucro >= 0 })
     return items.slice(0, 6)
-  }, [filtered, tRec, pRec, lucro, tDesp, despByCat, recByCat, contasReceber, contasPagar])
+  }, [filtered, tRec, pRec, lucro, despByCat, recByCat, contasReceber, contasPagar])
 
   const recentes = useMemo(() => [...filtered].sort((a, b) => (b.data || '').localeCompare(a.data || '')).slice(0, 8), [filtered])
   const metas = data.metas || []
