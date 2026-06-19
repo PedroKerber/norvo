@@ -261,17 +261,18 @@ export default function Usuarios({ usuario }) {
 
         await logAudit('usuario_criado', { email: form.email, perfil: form.perfil, empresas: form.empresaIds })
 
-        // Try EmailJS with the real invite link (non-blocking)
+        // Try EmailJS with the real invite link
         if (EMAILJS_SERVICE_ID && inviteLink) {
           const empresasNome = form.empresaIds.map(id => EMPRESAS.find(e => e.id === id)?.nome).filter(Boolean).join(', ')
           emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
             to_name: form.nome, to_email: form.email,
             empresa: empresasNome || '', cargo: form.cargo,
             link: inviteLink,
-          }, EMAILJS_PUBLIC_KEY).catch(() => {})
+          }, EMAILJS_PUBLIC_KEY)
+            .then(() => showToast('E-mail de convite enviado!'))
+            .catch(err => { console.error('EmailJS error:', err); showToast('Convite criado! E-mail não enviado — use o link abaixo.', false) })
         }
 
-        // Always show the link so the admin can share it directly
         if (inviteLink) {
           setInviteLinkModal({ email: form.email, nome: form.nome, link: inviteLink })
         } else {
@@ -354,7 +355,9 @@ export default function Usuarios({ usuario }) {
             to_name: u.nome, to_email: u.email,
             empresa: empNomes(u.empresaIds).join(', '),
             cargo: u.cargo || '', link: inviteLink,
-          }, EMAILJS_PUBLIC_KEY).catch(() => {})
+          }, EMAILJS_PUBLIC_KEY)
+            .then(() => showToast('E-mail de convite enviado!'))
+            .catch(err => console.error('EmailJS error:', err))
         }
         setInviteLinkModal({ email: u.email, nome: u.nome, link: inviteLink })
       } else {
