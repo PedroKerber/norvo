@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react'
 import { T } from '../theme'
 import { Card, Btn, Modal } from '../components/ui'
+import { SEGMENTOS, labelSegmento } from '../modules'
 
-const EMPTY = { nome: '', cnpj: '', setor: '', cor: '#16a34a' }
-const SETORES = ['Imobiliário', 'Construção', 'Incorporação', 'Academia/Esportes', 'Tecnologia', 'Comércio', 'Indústria', 'Serviços', 'Saúde', 'Educação', 'Agronegócio', 'Outro']
+const EMPTY = { nome: '', cnpj: '', segmento: '', cor: '#16a34a' }
 
 function mascaraCNPJ(v) {
   const d = v.replace(/\D/g, '').slice(0, 14)
@@ -36,7 +36,7 @@ export default function Empresas({ setPage, empresas = [], onSaveEmpresa }) {
     if (!form.nome.trim()) e.nome = 'Nome é obrigatório'
     const digits = form.cnpj.replace(/\D/g, '')
     if (!digits || digits.length !== 14) e.cnpj = 'CNPJ deve ter 14 dígitos'
-    if (!form.setor) e.setor = 'Selecione o segmento'
+    if (!form.segmento) e.segmento = 'Selecione o segmento'
     return e
   }
 
@@ -122,7 +122,7 @@ export default function Empresas({ setPage, empresas = [], onSaveEmpresa }) {
                 <div style={{ color: T.sub, fontSize: 13, marginBottom: 6 }}>{emp.cnpj || '—'}</div>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   <span style={{ background: T.greenL, color: T.green, fontSize: 11, fontWeight: 700, borderRadius: 4, padding: '2px 8px' }}>Ativa</span>
-                  {emp.setor && <span style={{ background: T.blueL, color: '#2563eb', fontSize: 11, fontWeight: 600, borderRadius: 4, padding: '2px 8px' }}>{emp.setor}</span>}
+                  {(emp.setor || emp.segmento) && <span style={{ background: T.blueL, color: '#2563eb', fontSize: 11, fontWeight: 600, borderRadius: 4, padding: '2px 8px' }}>{emp.setor || labelSegmento(emp.segmento)}</span>}
                 </div>
               </div>
               <div className="emp-card-meta">
@@ -169,7 +169,7 @@ export default function Empresas({ setPage, empresas = [], onSaveEmpresa }) {
             </div>
             <div>
               <div style={{ fontWeight: 700, fontSize: 15, color: T.text }}>{form.nome || 'Nome da empresa'}</div>
-              <div style={{ color: T.muted, fontSize: 12 }}>{form.setor || 'Segmento'}</div>
+              <div style={{ color: T.muted, fontSize: 12 }}>{form.segmento ? labelSegmento(form.segmento) : 'Segmento'}</div>
             </div>
           </div>
 
@@ -190,14 +190,14 @@ export default function Empresas({ setPage, empresas = [], onSaveEmpresa }) {
           <div style={{ marginBottom: 14 }}>
             <label style={{ display: 'block', fontWeight: 600, fontSize: 12, color: T.sub, marginBottom: 5 }}>SEGMENTO *</label>
             <div style={{ position: 'relative' }}>
-              <select value={form.setor} onChange={e => { setForm(f => ({ ...f, setor: e.target.value })); if (erros.setor) setErros(p => ({ ...p, setor: '' })) }}
-                style={{ ...iSty(erros.setor), appearance: 'none', paddingRight: 28 }}>
+              <select value={form.segmento} onChange={e => { setForm(f => ({ ...f, segmento: e.target.value })); if (erros.segmento) setErros(p => ({ ...p, segmento: '' })) }}
+                style={{ ...iSty(erros.segmento), appearance: 'none', paddingRight: 28 }}>
                 <option value="">Selecione o segmento</option>
-                {SETORES.map(s => <option key={s} value={s}>{s}</option>)}
+                {SEGMENTOS.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
               </select>
               <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: T.muted, fontSize: 12 }}>▾</span>
             </div>
-            {erros.setor && <div style={{ color: T.red, fontSize: 11, marginTop: 3 }}>⚠ {erros.setor}</div>}
+            {erros.segmento && <div style={{ color: T.red, fontSize: 11, marginTop: 3 }}>⚠ {erros.segmento}</div>}
           </div>
 
           <div>

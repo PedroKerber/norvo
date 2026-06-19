@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { T } from '../theme'
 import { useTheme } from '../context/ThemeContext'
+import { isModuloPermitido } from '../modules'
 
 const PERFIL_CARGO = { master: 'Master', admin: 'Administrador', gerente: 'Gerente Financeiro', contador: 'Contador', visualizador: 'Visualizador' }
 
@@ -179,6 +180,13 @@ export default function Sidebar({ page, setPage, collapsed, onToggle, usuario, p
     if (isMobile && onMobileClose) onMobileClose()
   }
 
+  // Filtra grupos/itens pelo segmento da empresa selecionada
+  const segmento = empresa?.segmento
+  const visibleGroups = NAV_GROUPS.map(group => ({
+    ...group,
+    items: group.items.filter(item => isModuloPermitido(item.id, segmento)),
+  })).filter(group => group.items.length > 0)
+
   // ── MOBILE RENDER ────────────────────────────────────────────────────────────
   if (isMobile) {
     return (
@@ -218,7 +226,7 @@ export default function Sidebar({ page, setPage, collapsed, onToggle, usuario, p
 
               {/* Drawer nav */}
               <nav className="sidebar-nav" style={{ flex: 1, overflowY: 'auto', padding: '8px 0 6px' }}>
-                {NAV_GROUPS.map((group, gi) => (
+                {visibleGroups.map((group, gi) => (
                   <div key={gi} style={{ marginBottom: 2 }}>
                     {group.label && (
                       <div style={{
@@ -347,7 +355,7 @@ export default function Sidebar({ page, setPage, collapsed, onToggle, usuario, p
         flex: 1, overflowY: 'auto', overflowX: 'hidden', minHeight: 0,
         padding: '10px 0 6px', scrollbarWidth: 'thin',
       }}>
-        {NAV_GROUPS.map((group, gi) => (
+        {visibleGroups.map((group, gi) => (
           <div key={gi} style={{ marginBottom: collapsed ? 0 : 2 }}>
             {group.label && !collapsed && (
               <div style={{

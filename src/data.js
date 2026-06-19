@@ -1,11 +1,11 @@
 export const EMPRESAS = [
-  { id: 'kz', nome: 'Kazole Imobiliária', initials: 'KI', cnpj: '35.586.526/0001-30', cor: '#16a34a', setor: 'Imobiliário' },
-  { id: 'kzl', nome: 'KZL Construtora', initials: 'KC', cnpj: '54.823.138/0001-80', cor: '#2563eb', setor: 'Construção' },
-  { id: 'ki1', nome: 'Incorporação Kazole 01', initials: 'I1', cnpj: '47.458.920/0001-10', cor: '#7c3aed', setor: 'Incorporação' },
-  { id: 'ki2', nome: 'Incorporação Kazole 02', initials: 'I2', cnpj: '41.728.066/0001-90', cor: '#ea580c', setor: 'Incorporação' },
-  { id: 'ace', nome: 'ACE Club', initials: 'AC', cnpj: '12.345.678/0001-90', cor: '#dc2626', setor: 'Academia/Esportes' },
-  { id: 'ax', nome: 'AxionZ Tech', initials: 'AT', cnpj: '98.765.432/0001-10', cor: '#0891b2', setor: 'Tecnologia' },
-  { id: 'k2', nome: 'K2 Imob', initials: 'K2', cnpj: '41.728.066/0001-85', cor: '#ca8a04', setor: 'Imobiliário' },
+  { id: 'kz',  nome: 'Kazole Imobiliária',     initials: 'KI', cnpj: '35.586.526/0001-30', cor: '#16a34a', setor: 'Imobiliária',      segmento: 'imobiliaria'   },
+  { id: 'kzl', nome: 'KZL Construtora',         initials: 'KC', cnpj: '54.823.138/0001-80', cor: '#2563eb', setor: 'Construtora',       segmento: 'construtora'   },
+  { id: 'ki1', nome: 'Incorporação Kazole 01',  initials: 'I1', cnpj: '47.458.920/0001-10', cor: '#7c3aed', setor: 'Incorporadora',     segmento: 'incorporadora' },
+  { id: 'ki2', nome: 'Incorporação Kazole 02',  initials: 'I2', cnpj: '41.728.066/0001-90', cor: '#ea580c', setor: 'Incorporadora',     segmento: 'incorporadora' },
+  { id: 'ace', nome: 'ACE Club',                initials: 'AC', cnpj: '12.345.678/0001-90', cor: '#dc2626', setor: 'Academia / Esporte', segmento: 'academia'      },
+  { id: 'ax',  nome: 'AxionZ Tech',             initials: 'AT', cnpj: '98.765.432/0001-10', cor: '#0891b2', setor: 'Tecnologia',        segmento: 'tecnologia'    },
+  { id: 'k2',  nome: 'K2 Imob',                 initials: 'K2', cnpj: '41.728.066/0001-85', cor: '#ca8a04', setor: 'Imobiliária',       segmento: 'imobiliaria'   },
 ]
 
 export const CATS_RECEITA = [

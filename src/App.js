@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { useMobile } from './context/MobileContext'
 import { T, uid } from './theme'
 import { initData, EMPRESAS, CATS_KZL } from './data'
+import { isModuloPermitido, labelSegmento } from './modules'
 import { supabase, getAllLancamentos, getLancamentos, saveLancamento, deleteLancamento, saveLancamentos, getMetas, saveMeta, deleteMeta, signIn, signOut, deleteAllLancamentos, deleteAllMetas } from './supabase'
 
 import Sidebar from './components/Sidebar'
@@ -252,7 +253,8 @@ export default function App() {
       initials,
       cnpj: form.cnpj.trim(),
       cor: form.cor || '#16a34a',
-      setor: form.setor.trim(),
+      segmento: form.segmento || '',
+      setor: labelSegmento(form.segmento),
     }
     try {
       const saved = JSON.parse(localStorage.getItem(`x8_empresas_${usuario.id}`) || '[]')
@@ -324,6 +326,32 @@ export default function App() {
 
   const renderPage = () => {
     if (PLACEHOLDER_PAGES.includes(page)) return <Placeholder page={page} />
+
+    // ── Guarda de segmento: bloqueia módulos não permitidos ──────────────────
+    if (!isModuloPermitido(page, empresa?.segmento)) {
+      const segLabel = labelSegmento(empresa?.segmento)
+      return (
+        <div style={{ textAlign: 'center', padding: '64px 24px', fontFamily: "'Segoe UI', sans-serif" }}>
+          <div style={{ fontSize: 52, marginBottom: 16 }}>🔒</div>
+          <h2 style={{ fontWeight: 800, fontSize: 22, margin: '0 0 10px', color: 'var(--text)' }}>
+            Módulo não disponível
+          </h2>
+          <p style={{ color: 'var(--text-sub)', fontSize: 15, maxWidth: 420, margin: '0 auto 10px', lineHeight: 1.6 }}>
+            Este módulo não está disponível para empresas do segmento
+            {' '}<strong style={{ color: T.primary }}>{segLabel}</strong>.
+          </p>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+            Se precisar desta funcionalidade, verifique com o administrador do sistema.
+          </p>
+          <button
+            onClick={() => setPage('dashboard')}
+            style={{ marginTop: 24, background: T.primary, color: '#fff', border: 'none', borderRadius: 8, padding: '10px 24px', fontFamily: 'inherit', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+            ← Voltar ao Dashboard
+          </button>
+        </div>
+      )
+    }
+
     switch (page) {
       case 'dashboard': return <Dashboard {...sharedProps} allData={appData} allEmpresas={empresas} />
       case 'receitas': return <Receitas {...sharedProps} />
