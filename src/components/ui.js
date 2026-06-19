@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { T } from '../theme'
+import { useMobile } from '../context/MobileContext'
 
 export const Card = ({ children, style = {}, onClick }) => (
   <div onClick={onClick} style={{
@@ -103,22 +104,34 @@ export const Select = ({ label, value, onChange, options, placeholder, style = {
   </div>
 )
 
-export const Modal = ({ title, onClose, children, footer, width = 520 }) => (
-  <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-    <Card style={{ width: '100%', maxWidth: width, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ padding: '18px 20px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-        <span style={{ fontWeight: 700, fontSize: 16 }}>{title}</span>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: T.sub }}>✕</button>
-      </div>
-      <div style={{ padding: 20, overflowY: 'auto', flex: 1 }}>{children}</div>
-      {footer && (
-        <div style={{ padding: '14px 20px', borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'flex-end', gap: 10, flexShrink: 0 }}>
-          {footer}
+export const Modal = ({ title, onClose, children, footer, width = 520 }) => {
+  const isMobile = useMobile()
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000,
+      display: 'flex', alignItems: isMobile ? 'flex-end' : 'center',
+      justifyContent: 'center', padding: isMobile ? 0 : 20,
+    }}>
+      <Card style={{
+        width: '100%', maxWidth: isMobile ? '100%' : width,
+        maxHeight: isMobile ? '92dvh' : '90vh',
+        display: 'flex', flexDirection: 'column',
+        borderRadius: isMobile ? '18px 18px 0 0' : 12,
+      }}>
+        <div style={{ padding: '16px 20px', borderBottom: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+          <span style={{ fontWeight: 700, fontSize: 16 }}>{title}</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: T.sub }}>✕</button>
         </div>
-      )}
-    </Card>
-  </div>
-)
+        <div style={{ padding: isMobile ? '16px' : 20, overflowY: 'auto', flex: 1 }}>{children}</div>
+        {footer && (
+          <div style={{ padding: '14px 20px', borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'flex-end', gap: 10, flexShrink: 0, flexWrap: 'wrap' }}>
+            {footer}
+          </div>
+        )}
+      </Card>
+    </div>
+  )
+}
 
 export const Toast = ({ msg, type, onDone }) => {
   useEffect(() => { const t = setTimeout(onDone, 2800); return () => clearTimeout(t) }, [onDone])
@@ -167,41 +180,78 @@ export const FilterBar = ({ children }) => (
 )
 
 export const SearchInput = ({ value, onChange, placeholder = 'Buscar...' }) => (
-  <div style={{ position: 'relative', flex: 1, minWidth: 200, maxWidth: 320 }}>
+  <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
     <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: T.muted, fontSize: 14 }}>🔍</span>
     <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
       style={{ width: '100%', background: T.white, border: `1.5px solid ${T.border}`, borderRadius: 8, padding: '8px 12px 8px 34px', color: T.text, fontSize: 14, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }} />
   </div>
 )
 
-export const Table = ({ columns, data, onRow, emptyState }) => (
-  <div style={{ overflowX: 'auto' }}>
-    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
-      <thead>
-        <tr style={{ borderBottom: `1px solid ${T.border}` }}>
-          {columns.map(col => (
-            <th key={col.key} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: T.sub, fontSize: 12, whiteSpace: 'nowrap' }}>
-              {col.label}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {data.length === 0 && emptyState ? (
-          <tr><td colSpan={columns.length}>{emptyState}</td></tr>
-        ) : data.map((row, i) => (
-          <tr key={row.id || i} onClick={onRow ? () => onRow(row) : undefined}
-            style={{ borderBottom: `1px solid ${T.borderLight}`, cursor: onRow ? 'pointer' : 'default', transition: 'background .1s' }}
-            onMouseEnter={e => { if (onRow) e.currentTarget.style.background = T.bg }}
-            onMouseLeave={e => { e.currentTarget.style.background = '' }}>
+export const Table = ({ columns, data, onRow, emptyState }) => {
+  const isMobile = useMobile()
+
+  if (isMobile) {
+    const actionCol = columns.find(c => c.key === 'id')
+    const mainCols  = columns.filter(c => c.key !== 'id')
+
+    if (data.length === 0) return emptyState ? <>{emptyState}</> : null
+
+    return (
+      <div>
+        {data.map((row, i) => (
+          <div key={row.id || i}
+            onClick={onRow ? () => onRow(row) : undefined}
+            style={{ padding: '13px 16px', borderBottom: `1px solid ${T.borderLight}`, cursor: onRow ? 'pointer' : 'default' }}>
+            {mainCols.map(col => {
+              const rendered = col.render ? col.render(row[col.key], row) : row[col.key]
+              return (
+                <div key={col.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5, gap: 8, minWidth: 0 }}>
+                  <span style={{ fontSize: 11, color: T.muted, fontWeight: 600, flexShrink: 0, minWidth: 72 }}>{col.label}</span>
+                  <div style={{ textAlign: 'right', minWidth: 0, overflow: 'hidden' }}>{rendered}</div>
+                </div>
+              )
+            })}
+            {actionCol && (
+              <div onClick={e => e.stopPropagation()}
+                style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${T.borderLight}`, display: 'flex', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 6 }}>
+                {actionCol.render ? actionCol.render(row[actionCol.key], row) : null}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+        <thead>
+          <tr style={{ borderBottom: `1px solid ${T.border}` }}>
             {columns.map(col => (
-              <td key={col.key} style={{ padding: '12px 14px', verticalAlign: 'middle' }}>
-                {col.render ? col.render(row[col.key], row) : row[col.key]}
-              </td>
+              <th key={col.key} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, color: T.sub, fontSize: 12, whiteSpace: 'nowrap' }}>
+                {col.label}
+              </th>
             ))}
           </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-)
+        </thead>
+        <tbody>
+          {data.length === 0 && emptyState ? (
+            <tr><td colSpan={columns.length}>{emptyState}</td></tr>
+          ) : data.map((row, i) => (
+            <tr key={row.id || i} onClick={onRow ? () => onRow(row) : undefined}
+              style={{ borderBottom: `1px solid ${T.borderLight}`, cursor: onRow ? 'pointer' : 'default', transition: 'background .1s' }}
+              onMouseEnter={e => { if (onRow) e.currentTarget.style.background = T.bg }}
+              onMouseLeave={e => { e.currentTarget.style.background = '' }}>
+              {columns.map(col => (
+                <td key={col.key} style={{ padding: '12px 14px', verticalAlign: 'middle' }}>
+                  {col.render ? col.render(row[col.key], row) : row[col.key]}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}

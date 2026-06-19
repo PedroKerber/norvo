@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { T } from '../theme'
 import { CATS_DESPESA, CATS_RECEITA } from '../data'
+import { useMobile } from '../context/MobileContext'
 
 const PRESETS = ['Hoje','Ontem','Últimos 7 dias','Últimos 30 dias','Este mês','Mês passado','Este trimestre','Este ano']
 const FORMAS  = ['PIX','Boleto','Cartão Crédito','Cartão Débito','TED','DOC','Dinheiro','Transferência','Cheque']
@@ -95,6 +96,7 @@ function FSel({ value, onChange, children }) {
 }
 
 export default function AdvancedFilters({ tipo = 'all', cats, filter, onApply, extraActions, storageKey }) {
+  const isMobile = useMobile()
   const [ei, setEi]         = useState(filter.inicio)
   const [ef, setEf]         = useState(filter.fim)
   const [ecat, setEcat]     = useState(filter.cat)
@@ -169,34 +171,69 @@ export default function AdvancedFilters({ tipo = 'all', cats, filter, onApply, e
       <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 12, padding: 18 }}>
 
         {/* Linha principal */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.2fr auto auto auto', gap: 12, alignItems: 'end', marginBottom: 14 }}>
-          <div>
-            <FLabel>📅 Data Inicial</FLabel>
-            <input type="date" value={ei} onChange={e => { setEi(e.target.value); setPreset('Personalizado') }} style={iSty} />
+        {isMobile ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              <div>
+                <FLabel>📅 Data Inicial</FLabel>
+                <input type="date" value={ei} onChange={e => { setEi(e.target.value); setPreset('Personalizado') }} style={iSty} />
+              </div>
+              <div>
+                <FLabel>📅 Data Final</FLabel>
+                <input type="date" value={ef} onChange={e => { setEf(e.target.value); setPreset('Personalizado') }} style={iSty} />
+              </div>
+            </div>
+            <div>
+              <FLabel>📂 Categoria</FLabel>
+              <FSel value={ecat} onChange={setEcat}>
+                <option value="">Todas</option>
+                {allCats.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+              </FSel>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={apply} style={{ flex: 2, background: T.primary, color: '#fff', border: 'none', borderRadius: 8, padding: '10px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
+                🔍 Aplicar
+              </button>
+              <button onClick={clear} style={{ flex: 1, background: 'none', border: '1px solid var(--border)', color: 'var(--text-sub)', borderRadius: 8, padding: '10px 14px', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit' }}>
+                🧹 Limpar
+              </button>
+              {storageKey && (
+                <button onClick={saveFavorite} style={{ flex: 1, background: saved ? T.green : 'none', color: saved ? '#fff' : 'var(--text-sub)', border: `1px solid ${saved ? T.green : 'var(--border)'}`, borderRadius: 8, padding: '10px 12px', cursor: 'pointer', fontSize: 12, fontFamily: 'inherit', transition: 'all .2s' }}>
+                  {saved ? '✓' : '💾'}
+                </button>
+              )}
+            </div>
           </div>
-          <div>
-            <FLabel>📅 Data Final</FLabel>
-            <input type="date" value={ef} onChange={e => { setEf(e.target.value); setPreset('Personalizado') }} style={iSty} />
-          </div>
-          <div>
-            <FLabel>📂 Categoria</FLabel>
-            <FSel value={ecat} onChange={setEcat}>
-              <option value="">Todas</option>
-              {allCats.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
-            </FSel>
-          </div>
-          <button onClick={apply} style={{ background: T.primary, color: '#fff', border: 'none', borderRadius: 8, padding: '9px 20px', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
-            🔍 Aplicar
-          </button>
-          <button onClick={clear} style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--text-sub)', borderRadius: 8, padding: '9px 14px', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
-            🧹 Limpar
-          </button>
-          {storageKey && (
-            <button onClick={saveFavorite} style={{ background: saved ? T.green : 'none', color: saved ? '#fff' : 'var(--text-sub)', border: `1px solid ${saved ? T.green : 'var(--border)'}`, borderRadius: 8, padding: '9px 14px', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', whiteSpace: 'nowrap', transition: 'all .2s' }}>
-              {saved ? '✓ Salvo!' : '💾 Favorito'}
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.2fr auto auto auto', gap: 12, alignItems: 'end', marginBottom: 14 }}>
+            <div>
+              <FLabel>📅 Data Inicial</FLabel>
+              <input type="date" value={ei} onChange={e => { setEi(e.target.value); setPreset('Personalizado') }} style={iSty} />
+            </div>
+            <div>
+              <FLabel>📅 Data Final</FLabel>
+              <input type="date" value={ef} onChange={e => { setEf(e.target.value); setPreset('Personalizado') }} style={iSty} />
+            </div>
+            <div>
+              <FLabel>📂 Categoria</FLabel>
+              <FSel value={ecat} onChange={setEcat}>
+                <option value="">Todas</option>
+                {allCats.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+              </FSel>
+            </div>
+            <button onClick={apply} style={{ background: T.primary, color: '#fff', border: 'none', borderRadius: 8, padding: '9px 20px', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+              🔍 Aplicar
             </button>
-          )}
-        </div>
+            <button onClick={clear} style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--text-sub)', borderRadius: 8, padding: '9px 14px', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+              🧹 Limpar
+            </button>
+            {storageKey && (
+              <button onClick={saveFavorite} style={{ background: saved ? T.green : 'none', color: saved ? '#fff' : 'var(--text-sub)', border: `1px solid ${saved ? T.green : 'var(--border)'}`, borderRadius: 8, padding: '9px 14px', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', whiteSpace: 'nowrap', transition: 'all .2s' }}>
+                {saved ? '✓ Salvo!' : '💾 Favorito'}
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Presets rápidos */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>

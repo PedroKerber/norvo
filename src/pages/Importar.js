@@ -120,7 +120,7 @@ export default function Importar({ empresa, onImport }) {
   return (
     <div style={{ fontFamily: "'Segoe UI', sans-serif", color: T.text }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div className="page-hd">
         <div>
           <h1 style={{ fontWeight: 800, fontSize: 26, margin: '0 0 4px' }}>Importar Planilha</h1>
           <div style={{ color: T.sub, fontSize: 14 }}>Importe lançamentos em massa a partir de um arquivo Excel.</div>

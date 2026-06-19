@@ -268,7 +268,7 @@ export default function ComparativoEmpresas({ appData, empresas }) {
   return (
     <div style={{ maxWidth: 1400, margin: '0 auto' }}>
       {/* ── HEADER ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+      <div className="page-hd">
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 800, color: T.text, margin: 0 }}>Comparativo de Empresas</h1>
           <p style={{ fontSize: 13, color: T.sub, margin: '4px 0 0' }}>

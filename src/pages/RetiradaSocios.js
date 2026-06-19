@@ -261,15 +261,15 @@ export default function RetiradaSocios({ empresa, data, onSave, onDelete }) {
         onNo={() => setConfirm(null)} />}
 
       {/* HEADER */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+      <div className="page-hd">
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ background: T.primaryLight, borderRadius: 12, width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>💸</div>
+          <div style={{ background: T.primaryLight, borderRadius: 12, width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>💸</div>
           <div>
             <h1 style={{ fontWeight: 800, fontSize: 26, margin: 0 }}>Retirada dos Sócios</h1>
             <div style={{ color: 'var(--text-sub)', fontSize: 14 }}>Pró-labore, distribuição de lucros e adiantamentos</div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div className="page-actions">
           <Btn variant="ghost" icon="📊" onClick={exportExcel}>Excel</Btn>
           <Btn onClick={openNew}>+ Nova Retirada</Btn>
         </div>

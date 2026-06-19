@@ -116,6 +116,24 @@ button, a { transition: background .15s, opacity .15s, transform .15s !important
 /* ── Table wrapper ── */
 .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
+/* ── Form grids (collapse to 1-col on mobile) ── */
+.form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+/* ── Filter pill row (horizontal scroll on mobile) ── */
+.filter-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ── Page action buttons row ── */
+.page-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+/* ── Form overlay ── */
+.form-overlay-header { background: var(--card); border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 10; box-shadow: var(--shadow); }
+.form-overlay-body   { flex: 1; padding: 24px 28px; display: flex; gap: 20px; align-items: flex-start; max-width: 1380px; width: 100%; margin: 0 auto; box-sizing: border-box; }
+.form-overlay-footer { background: var(--card); border-top: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* ── Advanced filter main row ── */
+.adv-filter-row { display: grid; grid-template-columns: 1fr 1fr 1.2fr auto auto auto; gap: 12px; align-items: end; margin-bottom: 14px; }
+
 /* ── Mobile breakpoints ── */
 @media (max-width: 768px) {
   /* Grid overrides */
@@ -128,10 +146,17 @@ button, a { transition: background .15s, opacity .15s, transform .15s !important
   .g-side   { grid-template-columns: 1fr !important; gap: 10px; margin-bottom: 12px; }
   .g-side-r { grid-template-columns: 1fr !important; gap: 10px; margin-bottom: 12px; }
 
+  /* Form grids collapse to 1-col */
+  .form-grid-3 { grid-template-columns: 1fr !important; gap: 10px; }
+  .form-grid-2 { grid-template-columns: 1fr !important; gap: 10px; }
+
   /* Page header — stack vertically */
   .page-hd { flex-direction: column !important; align-items: flex-start !important; gap: 10px !important; }
   .page-hd > *:last-child { width: 100%; }
 
+  /* Page actions — wrap buttons */
+  .page-actions { flex-wrap: wrap; gap: 8px; }
+  .page-actions > button { flex: 1; min-width: calc(50% - 4px); justify-content: center; }
 
   /* Empresa card meta — hide on mobile */
   .emp-card-meta { display: none !important; }
@@ -148,10 +173,40 @@ button, a { transition: background .15s, opacity .15s, transform .15s !important
 
   /* KPI card font size */
   .kpi-val { font-size: 18px !important; }
+
+  /* Advanced filter main row — 2 cols on mobile */
+  .adv-filter-row {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px;
+  }
+  .adv-filter-row .adv-filter-btns {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 8px;
+  }
+  .adv-filter-row .adv-filter-btns button {
+    flex: 1;
+  }
+
+  /* Form overlay adjustments */
+  .form-overlay-header { padding: 12px 16px !important; }
+  .form-overlay-header .form-overlay-actions { flex-wrap: wrap; gap: 6px; }
+  .form-overlay-body {
+    padding: 14px 16px 24px !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+  .form-overlay-footer { padding: 12px 16px !important; }
+
+  /* Card table header bar */
+  .card-header-bar { flex-direction: column !important; gap: 10px !important; align-items: stretch !important; }
+  .card-header-bar > div { flex-wrap: wrap; gap: 6px; }
 }
 
 @media (max-width: 480px) {
   /* Even smaller screens — go to 1-col for KPIs too */
   .g-kpi { grid-template-columns: 1fr 1fr !important; }
   .g-4   { grid-template-columns: 1fr 1fr !important; }
+  /* Page actions — full width buttons on very small screens */
+  .page-actions > button { min-width: 100%; }
 }

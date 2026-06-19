@@ -405,15 +405,15 @@ export default function Despesas({ empresa, data, onSave, onDelete, onSaveBatch,
       )}
 
       {/* ── LISTA ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div className="page-hd">
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ background: T.redL, borderRadius: 10, width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, color: T.red }}>↓</div>
+          <div style={{ background: T.redL, borderRadius: 10, width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, color: T.red, flexShrink: 0 }}>↓</div>
           <div>
             <h1 style={{ fontWeight: 800, fontSize: 26, margin: 0 }}>Despesas</h1>
             <div style={{ color: 'var(--text-sub)', fontSize: 14 }}>Acompanhe todas as despesas da empresa selecionada.</div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <div className="page-actions">
           <Btn variant="ghost" icon="📊" onClick={exportExcel}>Excel</Btn>
           <Btn variant="ghost" icon="📄" onClick={exportPDF}>PDF</Btn>
           <Btn variant="danger" icon="+" onClick={openNew}>Nova despesa</Btn>
@@ -497,29 +497,29 @@ export default function Despesas({ empresa, data, onSave, onDelete, onSaveBatch,
         <div style={{ position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 2000, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
 
           {/* Header fixo */}
-          <div style={{ background: 'var(--card)', borderBottom: `1px solid var(--border)`, padding: '16px 28px', display: 'flex', alignItems: 'center', gap: 16, position: 'sticky', top: 0, zIndex: 10, boxShadow: 'var(--shadow)' }}>
+          <div className="form-overlay-header">
             <div style={{ background: T.redL, borderRadius: 10, width: 42, height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, color: T.red, flexShrink: 0 }}>↓</div>
-            <div>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--text)' }}>{editItem ? 'Editar Despesa' : 'Nova Despesa'}</div>
               <div style={{ color: 'var(--text-sub)', fontSize: 13 }}>Preencha os dados para registrar uma nova despesa</div>
             </div>
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center' }}>
+            <div className="form-overlay-actions" style={{ display: 'flex', gap: 10, alignItems: 'center', flexShrink: 0 }}>
               <input ref={nfRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.xml" style={{ display: 'none' }} onChange={lerNF} />
               <Btn variant="outline" onClick={() => nfRef.current?.click()} disabled={nfScanning}>
-                {nfScanning ? '⏳ Lendo NF...' : '📷 Ler Nota Fiscal'}
+                {nfScanning ? '⏳ Lendo NF...' : '📷 NF'}
               </Btn>
               <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, color: 'var(--text-sub)', lineHeight: 1, padding: 4 }}>✕</button>
             </div>
           </div>
 
           {/* Body */}
-          <div style={{ flex: 1, padding: '24px 28px', display: 'flex', gap: 20, alignItems: 'flex-start', maxWidth: 1380, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
+          <div className="form-overlay-body">
 
             {/* Formulário principal */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
 
               {/* Linha 1 — Seções 1, 2, 3 */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+              <div className="form-grid-3">
 
                 {/* Seção 1 — Informações Gerais */}
                 <div style={{ background: 'var(--card)', borderRadius: 12, border: `1px solid var(--border)`, padding: 20 }}>
@@ -674,7 +674,7 @@ export default function Despesas({ empresa, data, onSave, onDelete, onSaveBatch,
               </div>
 
               {/* Linha 2 — Seções 4, 5 */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div className="form-grid-2">
 
                 {/* Seção 4 — Fornecedor */}
                 <div style={{ background: 'var(--card)', borderRadius: 12, border: `1px solid var(--border)`, padding: 20 }}>
@@ -849,22 +849,19 @@ export default function Despesas({ empresa, data, onSave, onDelete, onSaveBatch,
           </div>
 
           {/* Footer fixo */}
-          <div style={{ background: 'var(--card)', borderTop: `1px solid var(--border)`, padding: '14px 28px', display: 'flex', gap: 10, alignItems: 'center', position: 'sticky', bottom: 0, zIndex: 10 }}>
+          <div className="form-overlay-footer" style={{ position: 'sticky', bottom: 0, zIndex: 10 }}>
             <Btn variant="ghost" onClick={() => setShowForm(false)}>Cancelar</Btn>
-            {!recSummary?.active && editItem && <Btn variant="ghost" onClick={() => duplicarItem(editItem)}>⧉ Duplicar Despesa</Btn>}
+            {!recSummary?.active && editItem && <Btn variant="ghost" onClick={() => duplicarItem(editItem)}>⧉ Duplicar</Btn>}
             {recSummary?.active ? (
-              <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
-                <Btn variant="ghost" onClick={() => setShowForm(false)}>Cancelar</Btn>
-                <Btn variant="danger" onClick={salvar}>
-                  ✓ Criar Recorrência — Gerar {recSummary.count} lançamento{recSummary.count !== 1 ? 's' : ''}
-                </Btn>
-              </div>
+              <Btn variant="danger" style={{ marginLeft: 'auto' }} onClick={salvar}>
+                ✓ Gerar {recSummary.count} lançamento{recSummary.count !== 1 ? 's' : ''}
+              </Btn>
             ) : (
-              <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
-                <Btn variant="ghost" style={{ borderColor: T.yellow, color: T.yellow }} onClick={salvarRascunho}>💾 Salvar Rascunho</Btn>
+              <>
+                <Btn variant="ghost" style={{ borderColor: T.yellow, color: T.yellow, marginLeft: 'auto' }} onClick={salvarRascunho}>💾 Rascunho</Btn>
                 <Btn variant="ghost" onClick={salvarENovo}>+ Salvar e Novo</Btn>
-                <Btn variant="danger" onClick={salvar}>✓ Salvar e Fechar</Btn>
-              </div>
+                <Btn variant="danger" onClick={salvar}>✓ Salvar</Btn>
+              </>
             )}
           </div>
         </div>

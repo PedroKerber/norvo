@@ -311,12 +311,12 @@ export default function FluxoCaixa({ data, empresa, onDelete, setPage }) {
         onNo={() => setConfirm(null)} />}
 
       {/* ── HEADER ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+      <div className="page-hd">
         <div>
           <h1 style={{ fontWeight: 800, fontSize: 26, margin: '0 0 4px' }}>Fluxo de Caixa</h1>
           <div style={{ color: 'var(--text-sub)', fontSize: 14 }}>{empresa?.nome} · {filter.inicio} a {filter.fim}</div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="page-actions">
           <Btn variant="ghost" icon="📊" onClick={exportExcel}>Excel</Btn>
           <Btn variant="ghost" icon="📄" onClick={exportPDF}>PDF</Btn>
         </div>

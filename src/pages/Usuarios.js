@@ -5,6 +5,7 @@ import { Card, Btn } from '../components/ui'
 import { EMPRESAS } from '../data'
 import { supabase } from '../supabase'
 import { EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, EMAILJS_PUBLIC_KEY } from '../config/emailjs'
+import { useMobile } from '../context/MobileContext'
 
 const MODULOS = ['Dashboard', 'Transações', 'Receitas', 'Despesas', 'Fluxo de Caixa', 'Contas a Pagar', 'Contas a Receber', 'Relatórios', 'Fechamento Mensal', 'Empresas', 'Categorias', 'Centro de Custos', 'Metas Financeiras', 'Usuários', 'Configurações', 'Logs do Sistema']
 const ACOES = ['Visualizar', 'Criar', 'Editar', 'Excluir', 'Exportar']
@@ -93,6 +94,7 @@ const StatusBdg = ({ status }) => {
 }
 
 export default function Usuarios({ usuario }) {
+  const isMobile = useMobile()
   const fotoRef = useRef(null)
 
   const [usuarios, setUsuarios] = useState([])
@@ -508,32 +510,112 @@ export default function Usuarios({ usuario }) {
 
           {/* Filtros */}
           <Card style={{ padding: '14px 18px', marginBottom: 18 }}>
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
                 <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: T.muted, fontSize: 14 }}>🔍</span>
                 <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por nome ou e-mail..."
                   style={{ width: '100%', padding: '8px 12px 8px 32px', border: `1.5px solid ${T.border}`, borderRadius: 8, background: T.white, color: T.text, fontSize: 13, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
               </div>
               <button onClick={loadSupabaseUsers} disabled={supabaseLoading}
-                style={{ background: T.bg, border: `1.5px solid ${T.border}`, borderRadius: 8, padding: '8px 14px', fontSize: 12, color: T.sub, cursor: supabaseLoading ? 'default' : 'pointer', fontFamily: 'inherit', opacity: supabaseLoading ? .6 : 1 }}>
+                style={{ background: T.bg, border: `1.5px solid ${T.border}`, borderRadius: 8, padding: '8px 14px', fontSize: 12, color: T.sub, cursor: supabaseLoading ? 'default' : 'pointer', fontFamily: 'inherit', opacity: supabaseLoading ? .6 : 1, whiteSpace: 'nowrap' }}>
                 {supabaseLoading ? 'Carregando…' : '↺ Atualizar'}
               </button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(3, 1fr)', gap: 8, marginTop: 10 }}>
               {[
                 { value: filtroEmp, set: setFiltroEmp, opts: [['Todas', 'Todas as empresas'], ...EMPRESAS.map(e => [e.id, e.nome])] },
                 { value: filtroPerfil, set: setFiltroPerfil, opts: [['Todos', 'Todos os perfis'], ...PERFIS.map(p => [p.id, p.nome])] },
                 { value: filtroStatus, set: setFiltroStatus, opts: [['Todos', 'Todos os status'], ['ativo', 'Ativo'], ['inativo', 'Inativo'], ['bloqueado', 'Bloqueado'], ['pendente', 'Convite pendente'], ['expirado', 'Convite expirado']] },
               ].map((f, i) => (
                 <select key={i} value={f.value} onChange={e => f.set(e.target.value)}
-                  style={{ background: T.white, border: `1.5px solid ${T.border}`, borderRadius: 8, padding: '8px 12px', color: T.text, fontSize: 13, outline: 'none', fontFamily: 'inherit' }}>
+                  style={{ background: T.white, border: `1.5px solid ${T.border}`, borderRadius: 8, padding: '8px 12px', color: T.text, fontSize: 13, outline: 'none', fontFamily: 'inherit', width: '100%' }}>
                   {f.opts.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               ))}
             </div>
           </Card>
 
-          {/* Tabela */}
+          {/* Tabela / Cards */}
           {supabaseLoading ? (
             <Card style={{ padding: '48px 16px', textAlign: 'center', color: T.muted, fontSize: 14, marginBottom: 24 }}>Carregando usuários do Supabase…</Card>
+          ) : isMobile ? (
+            /* ── MOBILE CARDS ── */
+            <div style={{ marginBottom: 24 }}>
+              {filtered.length === 0 ? (
+                <Card style={{ padding: '48px 16px', textAlign: 'center', color: T.muted, fontSize: 14 }}>Nenhum usuário encontrado.</Card>
+              ) : filtered.map((u, idx) => {
+                const st = getStatusConvite(u)
+                const isPendente = st === 'pendente' || st === 'expirado'
+                const mnu = { display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, textAlign: 'left', fontFamily: 'inherit' }
+                return (
+                  <Card key={u.id} style={{ padding: '16px', marginBottom: 10 }}>
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                      <div style={{ position: 'relative', flexShrink: 0 }}>
+                        {u.foto
+                          ? <img src={u.foto} alt="" style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover' }} />
+                          : <div style={{ width: 44, height: 44, borderRadius: '50%', background: avatarCor(u.nome), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: 14 }}>{initials(u.nome)}</div>
+                        }
+                        <span style={{ position: 'absolute', bottom: 1, right: 1, width: 10, height: 10, borderRadius: '50%', background: st === 'ativo' ? T.green : st === 'bloqueado' ? '#dc2626' : st === 'pendente' ? '#d97706' : '#9ca3af', border: '2px solid white' }} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.nome}</div>
+                        <div style={{ color: T.muted, fontSize: 12, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</div>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+                          <PerfilBadge perfil={u.perfil} />
+                          <StatusBdg status={st} />
+                        </div>
+                        {u.empresaIds?.length > 0 && (
+                          <div style={{ fontSize: 12, color: T.sub, marginTop: 6 }}>
+                            {u.empresaIds.length === 1 ? empNome(u.empresaIds[0]) : `${empNome(u.empresaIds[0])} +${u.empresaIds.length - 1}`} · {u.cargo}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                      {!u.emailConfirmado && (
+                        <button onClick={() => handleInvite(u)} disabled={inviteLoading === u.id}
+                          style={{ background: '#fff7ed', color: T.primary, border: `1px solid ${T.primary}44`, borderRadius: 7, padding: '6px 10px', cursor: inviteLoading === u.id ? 'default' : 'pointer', fontSize: 12, fontWeight: 700, fontFamily: 'inherit', opacity: inviteLoading === u.id ? .6 : 1 }}>
+                          {inviteLoading === u.id ? 'Enviando…' : 'Reenviar convite'}
+                        </button>
+                      )}
+                      <button onClick={() => openEdit(u)} style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 7, padding: '6px 12px', cursor: 'pointer', fontSize: 12, color: T.sub, fontFamily: 'inherit' }}>Editar</button>
+                      <button onClick={() => { setViewUser(u); setModalTipo('view') }} style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 7, padding: '6px 12px', cursor: 'pointer', fontSize: 12, color: T.sub, fontFamily: 'inherit' }}>Ver perfil</button>
+                      <div style={{ position: 'relative' }}>
+                        <button onClick={() => setActionMenu(actionMenu === u.id ? null : u.id)} style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 7, padding: '6px 10px', cursor: 'pointer', fontSize: 12, color: T.sub, fontFamily: 'inherit' }}>⋯ Mais</button>
+                        {actionMenu === u.id && (
+                          <>
+                            <div onClick={() => setActionMenu(null)} style={{ position: 'fixed', inset: 0, zIndex: 299 }} />
+                            <div style={{ position: 'absolute', left: 0, bottom: '100%', marginBottom: 4, background: T.white, border: `1px solid ${T.border}`, borderRadius: 10, boxShadow: T.shadowMd, zIndex: 300, minWidth: 200, overflow: 'hidden' }}>
+                              {isPendente ? (
+                                <>
+                                  <button onClick={() => handleInvite(u)} style={{ ...mnu, color: T.primary }}>✉ Reenviar convite</button>
+                                  <div style={{ height: 1, background: T.border, margin: '0 14px' }} />
+                                  {u.email !== usuario?.email && <button onClick={() => { setConfirmCancelId(u.id); setActionMenu(null) }} style={{ ...mnu, color: '#dc2626' }}>✕ Cancelar convite</button>}
+                                </>
+                              ) : (
+                                <>
+                                  <button onClick={() => { setSenhaUser(u); setTempSenha(''); setModalTipo('senha'); setActionMenu(null) }} style={{ ...mnu, color: T.text }}>🔑 Gerar senha temporária</button>
+                                  <div style={{ height: 1, background: T.border, margin: '0 14px' }} />
+                                  {st === 'ativo' && <button onClick={() => handleDeactivate(u.id)} style={{ ...mnu, color: '#d97706' }}>⏸ Desativar</button>}
+                                  {st === 'inativo' && <button onClick={() => handleReactivate(u.id)} style={{ ...mnu, color: T.green }}>▶ Reativar</button>}
+                                  <button onClick={() => handleBlock(u.id)} style={{ ...mnu, color: st === 'bloqueado' ? T.green : '#dc2626' }}>{st === 'bloqueado' ? '🔓 Desbloquear' : '🚫 Bloquear'}</button>
+                                  {u.email !== usuario?.email && (
+                                    <>
+                                      <div style={{ height: 1, background: T.border, margin: '0 14px' }} />
+                                      <button onClick={() => { setConfirmDeleteId(u.id); setActionMenu(null); setModalTipo('delete') }} style={{ ...mnu, color: '#dc2626' }}>🗑 Excluir</button>
+                                    </>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                )
+              })}
+            </div>
           ) : (
             <div className="tbl-wrap" style={{ marginBottom: 24 }}>
               <Card style={{ padding: 0, minWidth: 680 }}>
