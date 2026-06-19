@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { T } from '../theme'
-import { EMPRESAS } from '../data'
 import { useTheme } from '../context/ThemeContext'
 import { useNotif } from '../context/NotifContext'
 import NotifPanel, { NIcon } from './NotifPanel'
@@ -25,7 +24,7 @@ function MoonIcon() {
   )
 }
 
-export default function TopBar({ empresa, setEmpresa, onMenu, usuario, setPage, sidebarWidth = 280, isMobile = false }) {
+export default function TopBar({ empresa, setEmpresa, onMenu, usuario, setPage, sidebarWidth = 280, isMobile = false, empresas = [] }) {
   const [open, setOpen] = useState(false)
   const [userOpen, setUserOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
@@ -61,7 +60,7 @@ export default function TopBar({ empresa, setEmpresa, onMenu, usuario, setPage, 
           <>
             <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 299 }} />
             <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, background: T.white, border: `1px solid ${T.border}`, borderRadius: 10, boxShadow: T.shadowMd, zIndex: 300, minWidth: 220, maxHeight: 320, overflowY: 'auto' }}>
-              {EMPRESAS.map(emp => (
+              {(empresas.length > 0 ? empresas : [empresa]).map(emp => (
                 <button key={emp.id} onClick={() => { setEmpresa(emp); setOpen(false) }} style={{
                   display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 14px',
                   background: emp.id === empresa.id ? T.primaryLight : 'transparent',

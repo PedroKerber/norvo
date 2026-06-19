@@ -49,7 +49,7 @@ export default function App() {
   const [empresas, setEmpresas] = useState(EMPRESAS)
   const [extraCats, setExtraCats] = useState(() => { try { return JSON.parse(localStorage.getItem('x8_cats') || '[]') } catch { return [] } })
   const [loading, setLoading] = useState(true)
-  const [perfilFoto, setPerfilFoto] = useState(() => localStorage.getItem('x8_foto') || '')
+  const [perfilFoto, setPerfilFoto] = useState('')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('x8_sidebar') === '1')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const sidebarW = sidebarCollapsed ? 82 : 280
@@ -59,17 +59,20 @@ export default function App() {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session?.user) {
         const u = data.session.user
-        setUsuario({ id: u.id, email: u.email, nome: u.user_metadata?.nome || u.email.split('@')[0], perfil: u.user_metadata?.perfil || 'master' })
+        setUsuario({ id: u.id, email: u.email, nome: u.user_metadata?.nome || u.email.split('@')[0], perfil: u.user_metadata?.perfil || 'master', cargo: u.user_metadata?.cargo || '' })
+        setPerfilFoto(localStorage.getItem(`x8_foto_${u.id}`) || '')
       }
       setLoading(false)
     })
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         const u = session.user
-        setUsuario({ id: u.id, email: u.email, nome: u.user_metadata?.nome || u.email.split('@')[0], perfil: u.user_metadata?.perfil || 'master' })
+        setUsuario({ id: u.id, email: u.email, nome: u.user_metadata?.nome || u.email.split('@')[0], perfil: u.user_metadata?.perfil || 'master', cargo: u.user_metadata?.cargo || '' })
+        setPerfilFoto(localStorage.getItem(`x8_foto_${u.id}`) || '')
       } else {
         setUsuario(null)
         setEmpresa(null)
+        setPerfilFoto('')
       }
     })
     return () => listener.subscription.unsubscribe()
@@ -150,18 +153,30 @@ export default function App() {
 
   const handleLogin = useCallback(async (email, senha) => {
     const user = await signIn(email, senha)
-    setUsuario({ id: user.id, email: user.email, nome: user.user_metadata?.nome || user.email.split('@')[0], perfil: user.user_metadata?.perfil || 'master' })
+    setUsuario({ id: user.id, email: user.email, nome: user.user_metadata?.nome || user.email.split('@')[0], perfil: user.user_metadata?.perfil || 'master', cargo: user.user_metadata?.cargo || '' })
+    setPerfilFoto(localStorage.getItem(`x8_foto_${user.id}`) || '')
   }, [])
 
   const handlePerfilUpdate = useCallback(() => {
-    setPerfilFoto(localStorage.getItem('x8_foto') || '')
+    supabase.auth.getSession().then(({ data }) => {
+      const uid = data.session?.user?.id
+      if (uid) setPerfilFoto(localStorage.getItem(`x8_foto_${uid}`) || '')
+    })
   }, [])
 
   const handleLogout = useCallback(async () => {
     await signOut()
     localStorage.removeItem('x8_last_empresa')
     localStorage.removeItem('x8_last_page')
+    localStorage.removeItem('x8_foto')
+    localStorage.removeItem('x8_perfil')
+    localStorage.removeItem('x8_usuarios_v2')
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('x8_perms_'))
+      .forEach(k => localStorage.removeItem(k))
+    setPerfilFoto('')
     setUsuario(null)
+    setEmpresas(EMPRESAS)
     setEmpresa(null)
     setPage('dashboard')
   }, [])
@@ -355,6 +370,7 @@ export default function App() {
           setPage={setPage}
           sidebarWidth={isMobile ? 0 : sidebarW}
           isMobile={isMobile}
+          empresas={empresas}
         />
         <main style={{ flex: 1, marginTop: 60, padding: isMobile ? '16px 14px 80px' : '28px 28px 40px', overflowX: 'hidden' }}>
           {renderPage()}

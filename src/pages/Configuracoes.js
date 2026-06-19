@@ -63,12 +63,13 @@ const Overlay = ({ children, onClose }) => (
 export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpdate, setPage, onReset }) {
   const fotoRef = useRef(null)
   const { limparTudo } = useNotif()
-  const savedPerfil = JSON.parse(localStorage.getItem('x8_perfil') || '{}')
+  const perfilKey = usuario?.id ? `x8_perfil_${usuario.id}` : 'x8_perfil'
+  const savedPerfil = JSON.parse(localStorage.getItem(perfilKey) || '{}')
 
-  const [foto, setFoto] = useState(localStorage.getItem('x8_foto') || '')
-  const [nome, setNome] = useState(savedPerfil.nome || 'Pedro Felipe Ramos Kerber')
-  const [cargo, setCargo] = useState(savedPerfil.cargo || 'CEO / Administrador Master')
-  const [telefone, setTelefone] = useState(savedPerfil.telefone || '(61) 99999-9999')
+  const [foto, setFoto] = useState(localStorage.getItem(usuario?.id ? `x8_foto_${usuario.id}` : '') || '')
+  const [nome, setNome] = useState(savedPerfil.nome || usuario?.nome || '')
+  const [cargo, setCargo] = useState(savedPerfil.cargo || usuario?.cargo || '')
+  const [telefone, setTelefone] = useState(savedPerfil.telefone || '')
   const [cpf, setCpf] = useState(savedPerfil.cpf || '')
   const [showCpf, setShowCpf] = useState(false)
   const [editMode, setEditMode] = useState(false)
@@ -135,7 +136,7 @@ export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpda
     reader.onload = (ev) => {
       const b64 = ev.target.result
       setFoto(b64)
-      localStorage.setItem('x8_foto', b64)
+      if (usuario?.id) localStorage.setItem(`x8_foto_${usuario.id}`, b64)
       onPerfilUpdate && onPerfilUpdate()
       showToast('Foto atualizada com sucesso!')
     }
@@ -146,7 +147,8 @@ export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpda
   const salvar = async () => {
     if (!nome.trim()) return showToast('Nome é obrigatório', false)
     setSaving(true)
-    localStorage.setItem('x8_perfil', JSON.stringify({ nome, cargo, telefone, cpf }))
+    localStorage.setItem(perfilKey, JSON.stringify({ nome, cargo, telefone, cpf }))
+    try { await supabase.auth.updateUser({ data: { nome: nome.trim(), cargo } }) } catch {}
     onPerfilUpdate && onPerfilUpdate()
     await new Promise(r => setTimeout(r, 700))
     setSaving(false)

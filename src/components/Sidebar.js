@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { T } from '../theme'
 import { useTheme } from '../context/ThemeContext'
 
+const PERFIL_CARGO = { master: 'Master', admin: 'Administrador', gerente: 'Gerente Financeiro', contador: 'Contador', visualizador: 'Visualizador' }
+
 const S = {
   bg: 'var(--sidebar-bg)',
   active: 'rgba(244,123,32,0.15)',
@@ -159,9 +161,9 @@ export default function Sidebar({ page, setPage, collapsed, onToggle, usuario, p
   const [userMenu, setUserMenu] = useState(false)
   const { dark, toggleTheme } = useTheme()
 
-  const savedPerfil = JSON.parse(localStorage.getItem('x8_perfil') || '{}')
+  const savedPerfil = JSON.parse(localStorage.getItem(usuario?.id ? `x8_perfil_${usuario.id}` : 'x8_perfil_none') || '{}')
   const nomeDisplay = savedPerfil.nome || usuario?.nome || 'Usuário'
-  const cargoDisplay = savedPerfil.cargo || 'Master'
+  const cargoDisplay = savedPerfil.cargo || usuario?.cargo || PERFIL_CARGO[usuario?.perfil] || 'Usuário'
   const inicial = (nomeDisplay[0] || 'U').toUpperCase()
 
   const navigate = id => {
