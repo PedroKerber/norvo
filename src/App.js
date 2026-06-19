@@ -28,6 +28,7 @@ import AtivarConta from './pages/AtivarConta'
 import Configuracoes from './pages/Configuracoes'
 import Notificacoes from './pages/Notificacoes'
 import Placeholder from './pages/Placeholder'
+import ViabilidadeIncorporacao from './pages/ViabilidadeIncorporacao'
 
 const PLACEHOLDER_PAGES = ['fornecedores', 'clientes', 'scanner', 'contas_pagar', 'contas_receber']
 
@@ -341,6 +342,7 @@ export default function App() {
       case 'usuarios': return <Usuarios usuario={usuario} />
       case 'configuracoes': return <Configuracoes usuario={usuario} onLogout={handleLogout} empresa={empresa} onPerfilUpdate={handlePerfilUpdate} setPage={setPage} onReset={handleReset} />
       case 'notificacoes': return <Notificacoes setPage={setPage} />
+      case 'viabilidade_inc': return <ViabilidadeIncorporacao />
       default: return <Placeholder page={page} />
     }
   }

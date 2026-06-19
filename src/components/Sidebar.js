@@ -54,6 +54,8 @@ function Ico({ name, size = 18 }) {
     inner = <><rect x="2" y="3" width="9" height="18" rx="2"/><rect x="13" y="3" width="9" height="18" rx="2"/><line x1="6.5" y1="8" x2="6.5" y2="8"/><line x1="6.5" y1="12" x2="6.5" y2="12"/><line x1="6.5" y1="16" x2="6.5" y2="16"/><line x1="17.5" y1="8" x2="17.5" y2="8"/><line x1="17.5" y1="12" x2="17.5" y2="12"/><line x1="17.5" y1="16" x2="17.5" y2="16"/></>
   else if (name === 'logs')
     inner = <><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></>
+  else if (name === 'viabilidade_inc')
+    inner = <><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></>
   else if (name === 'chevron_left')
     inner = <polyline points="15 18 9 12 15 6"/>
   else if (name === 'chevron_right')
@@ -105,6 +107,9 @@ const NAV_GROUPS = [
     { id: 'metas', label: 'Metas Financeiras', icon: 'metas' },
     { id: 'fornecedores', label: 'Fornecedores', icon: 'fornecedores' },
     { id: 'clientes', label: 'Clientes', icon: 'clientes' },
+  ]},
+  { label: 'Incorporação', items: [
+    { id: 'viabilidade_inc', label: 'Viabilidade', icon: 'viabilidade_inc' },
   ]},
   { label: 'Sistema', items: [
     { id: 'usuarios', label: 'Usuários', icon: 'usuarios' },
