@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { T } from '../theme'
 import { Card } from '../components/ui'
 import { PLANOS, MODULE_CONFIG, labelPlano, getCorPlano, getLimitesPlano } from '../modules'
+import { apiFetch } from '../supabase'
 
 const PLANOS_ORDEM = ['basico', 'profissional', 'enterprise']
 
@@ -87,8 +88,9 @@ export default function MeuPlano({ empresa, empresas = [], usuario, setPage }) {
   const [upgradeModal, setUpgradeModal] = useState(null)
 
   useEffect(() => {
-    fetch('/api/list-users')
-      .then(r => r.json())
+    // list-users agora exige master; para não-master retorna 403 → contagem fica '—'.
+    apiFetch('/api/list-users')
+      .then(r => r.ok ? r.json() : { users: null })
       .then(d => { setNumUsuarios(Array.isArray(d.users) ? d.users.length : null) })
       .catch(() => setNumUsuarios(null))
       .finally(() => setLoadingU(false))
