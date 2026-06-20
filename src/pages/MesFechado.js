@@ -1,12 +1,14 @@
-import { useMemo, useState, useCallback } from 'react'
+import { useMemo, useState, useCallback, useEffect } from 'react'
 import * as XLSX from 'xlsx'
 import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { T, fmt, fmtS, fmtPct } from '../theme'
 import { genFluxoCaixaData } from '../data'
 import { Card, Btn, Toast } from '../components/ui'
 import CompetenciaSelector, { COMPETENCIA_DEFAULT, filterByCompetencia } from '../components/CompetenciaSelector'
+import { isMesFechado, setMesFechado, getHistoricoFechamento, addHistoricoFechamento } from '../supabase'
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+const fmtComp = (m) => { const p = (m || '').split('-'); const i = +p[1] - 1; return MESES[i] ? `${MESES[i]}/${p[0]}` : (m || '') }
 const COLORS_R = ['#16a34a','#2563eb','#7c3aed','#ea580c','#9ca3af','#0891b2']
 const COLORS_D = ['#2563eb','#dc2626','#7c3aed','#16a34a','#ea580c','#0891b2']
 
@@ -186,13 +188,17 @@ export default function MesFechado({ empresa, data, onFechar, onReabrir, usuario
   const [fCat, setFCat] = useState('')
   const [fStatus, setFStatus] = useState('')
 
-  const HIST_KEY = `x8_hist_${empresa?.id}`
-  const [historico, setHistorico] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(HIST_KEY) || '[]') } catch { return [] }
-  })
+  const [historico, setHistorico] = useState([])
+  const [fechado, setFechado] = useState(false)
 
   const lancs = useMemo(() => data.lancamentos || [], [data.lancamentos])
-  const fechado = data.mesFechado || false
+
+  // Carrega o estado de fechamento (por competência) e o histórico do Supabase (Fase 1)
+  useEffect(() => {
+    if (!empresa?.id) return
+    isMesFechado(empresa.id, mesAno).then(setFechado).catch(() => setFechado(false))
+    getHistoricoFechamento(empresa.id).then(setHistorico).catch(() => setHistorico([]))
+  }, [empresa, mesAno])
 
   const [anoN, mesN] = mesAno.split('-').map(Number)
   const mesLabel = `${MESES[mesN - 1]}/${anoN}`
@@ -262,21 +268,24 @@ export default function MesFechado({ empresa, data, onFechar, onReabrir, usuario
   const allCats = useMemo(() => [...new Set(lancs.map(l => l.catNome).filter(Boolean))].sort(), [lancs])
 
   const addHistorico = useCallback((tipo, motivoStr) => {
-    const entry = { tipo, motivo: motivoStr, usuario: usuario?.nome || 'Sistema', data: new Date().toISOString(), mes: mesLabel }
-    const next = [entry, ...historico].slice(0, 100)
-    setHistorico(next)
-    try { localStorage.setItem(HIST_KEY, JSON.stringify(next)) } catch {}
-  }, [historico, HIST_KEY, usuario, mesLabel])
+    const entry = { tipo, motivo: motivoStr, usuario: usuario?.nome || 'Sistema', data: new Date().toISOString(), mes: mesAno }
+    setHistorico(prev => [entry, ...prev].slice(0, 100))
+    if (empresa?.id) addHistoricoFechamento(empresa.id, mesAno, tipo, motivoStr, usuario?.id, usuario?.nome).catch(() => {})
+  }, [empresa, mesAno, usuario])
 
-  const handleFechar = () => {
+  const handleFechar = async () => {
+    if (empresa?.id) { try { await setMesFechado(empresa.id, mesAno, true, usuario?.id) } catch {} }
+    setFechado(true)
     onFechar?.()
     addHistorico('fechamento', 'Período fechado')
     setModal(null)
     setToast({ msg: 'Período fechado com sucesso!', type: 'success' })
   }
 
-  const handleReabrir = () => {
+  const handleReabrir = async () => {
     if (!motivo.trim()) { setToast({ msg: 'Informe o motivo da reabertura.', type: 'error' }); return }
+    if (empresa?.id) { try { await setMesFechado(empresa.id, mesAno, false, usuario?.id) } catch {} }
+    setFechado(false)
     onReabrir?.()
     addHistorico('reabertura', motivo)
     setMotivo('')
@@ -371,7 +380,7 @@ export default function MesFechado({ empresa, data, onFechar, onReabrir, usuario
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 600, fontSize: 13 }}>
-              {h.tipo === 'fechamento' ? 'Período fechado' : h.tipo === 'reabertura' ? 'Período reaberto' : h.tipo === 'exportacao_pdf' ? 'PDF exportado' : h.tipo === 'exportacao_excel' ? 'Excel exportado' : h.tipo === 'compartilhamento_wa' ? 'Compartilhado via WhatsApp' : h.tipo === 'compartilhamento_email' ? 'Compartilhado via e-mail' : h.tipo} — {h.mes}
+              {h.tipo === 'fechamento' ? 'Período fechado' : h.tipo === 'reabertura' ? 'Período reaberto' : h.tipo === 'exportacao_pdf' ? 'PDF exportado' : h.tipo === 'exportacao_excel' ? 'Excel exportado' : h.tipo === 'compartilhamento_wa' ? 'Compartilhado via WhatsApp' : h.tipo === 'compartilhamento_email' ? 'Compartilhado via e-mail' : h.tipo} — {fmtComp(h.mes)}
             </div>
             <div style={{ fontSize: 12, color: T.sub, marginTop: 2 }}>
               Por: <strong>{h.usuario}</strong> · {new Date(h.data).toLocaleDateString('pt-BR')} às {new Date(h.data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}

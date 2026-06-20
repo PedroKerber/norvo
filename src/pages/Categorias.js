@@ -8,7 +8,7 @@ const ICONS_RECEITA = { venda_imoveis: '🏠', locacao: '🔑', alugueis: '🔑'
 
 const EMPTY_CAT = { nome: '', tipo: 'despesa', descricao: '', cor: '#2563eb' }
 
-export default function Categorias({ data, extraCats = [], onSaveCat, onDeleteCat }) {
+export default function Categorias({ data, extraCats = [], onSaveCat, onDeleteCat, onSetStatus }) {
   const lancamentos = useMemo(() => data.lancamentos || [], [data.lancamentos])
   const [tab, setTab] = useState('Todas')
   const [search, setSearch] = useState('')
@@ -55,7 +55,7 @@ export default function Categorias({ data, extraCats = [], onSaveCat, onDeleteCa
 
   const handleSave = () => {
     if (!form.nome.trim()) return
-    const cat = isEdit ? form : { ...form, id: uid(), builtin: false, icon: '📂' }
+    const cat = isEdit ? form : { ...form, id: uid(), builtin: false, icon: '📂', status: 'ativa' }
     if (onSaveCat) onSaveCat(cat, isEdit)
     setModal(false)
   }
@@ -150,15 +150,27 @@ export default function Categorias({ data, extraCats = [], onSaveCat, onDeleteCa
                 </td>
                 <td style={{ padding: '12px 16px', color: T.sub, maxWidth: 240 }}>{cat.descricao}</td>
                 <td style={{ padding: '12px 16px' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: T.green, fontWeight: 600 }}>
-                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: T.green, display: 'inline-block' }} />Ativa
-                  </span>
+                  {cat.status === 'inativa' ? (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: T.muted, fontWeight: 600 }}>
+                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: T.muted, display: 'inline-block' }} />Inativa
+                    </span>
+                  ) : (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: T.green, fontWeight: 600 }}>
+                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: T.green, display: 'inline-block' }} />Ativa
+                    </span>
+                  )}
                 </td>
                 <td style={{ padding: '12px 16px' }}>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => openEdit(cat)} style={{ background: 'none', border: `1px solid ${T.border}`, borderRadius: 6, padding: '5px 9px', cursor: 'pointer', fontSize: 14 }}>✏️</button>
+                    <button onClick={() => openEdit(cat)} title="Editar" style={{ background: 'none', border: `1px solid ${T.border}`, borderRadius: 6, padding: '5px 9px', cursor: 'pointer', fontSize: 14 }}>✏️</button>
                     {!cat.builtin && (
-                      <button onClick={() => setConfirm(cat.id)} style={{ background: 'none', border: `1px solid ${T.redL}`, borderRadius: 6, padding: '5px 9px', cursor: 'pointer', fontSize: 14, color: T.red }}>🗑</button>
+                      <>
+                        <button onClick={() => onSetStatus && onSetStatus(cat, cat.status === 'inativa' ? 'ativa' : 'inativa')}
+                          style={{ background: 'none', border: `1px solid ${T.border}`, borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontSize: 12, color: cat.status === 'inativa' ? T.green : T.sub, fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+                          {cat.status === 'inativa' ? 'Reativar' : 'Desativar'}
+                        </button>
+                        <button onClick={() => setConfirm(cat.id)} title="Excluir" style={{ background: 'none', border: `1px solid ${T.redL}`, borderRadius: 6, padding: '5px 9px', cursor: 'pointer', fontSize: 14, color: T.red }}>🗑</button>
+                      </>
                     )}
                   </div>
                 </td>

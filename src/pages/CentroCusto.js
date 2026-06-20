@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { T, uid, fmtS } from '../theme'
 import { Card, Btn, Input, Modal } from '../components/ui'
-import { EMPRESAS } from '../data'
+import { getCentroCustos, saveCentroCusto, deleteCentroCusto } from '../supabase'
 
+// Centros demo — semeados no Supabase, por empresa, na 1ª carga (idempotente)
 const CENTROS_INICIAIS = [
   { id: 'adm', nome: 'Administrativo', desc: 'Despesas administrativas gerais', ativo: true, responsavel: '', email: '', empresaId: 'kz' },
   { id: 'com', nome: 'Comercial', desc: 'Despesas do setor comercial', ativo: true, responsavel: '', email: '', empresaId: 'kz' },
@@ -17,18 +18,37 @@ const CENTROS_INICIAIS = [
 const ICONS_CC = { adm: '🏛', com: '💼', mkt: '📣', ope: '⚙', fin: '💰', rh: '👥', tec: '💻' }
 const PIE_COLORS = [T.orange, T.blue, T.red, T.green, T.purple, T.cyan, T.yellow]
 
-const EMPTY = { nome: '', desc: '', responsavel: '', email: '', empresaId: 'kz', ativo: true }
+const EMPTY = { nome: '', desc: '', responsavel: '', email: '', ativo: true }
 
 export default function CentroCusto({ empresa, data }) {
   const lancamentos = useMemo(() => data.lancamentos || [], [data.lancamentos])
-  const [centros, setCentros] = useState(CENTROS_INICIAIS)
+  const [centros, setCentros] = useState([])
   const [tab, setTab] = useState('Todos')
   const [search, setSearch] = useState('')
-  const [filtroEmp, setFiltroEmp] = useState('Todas')
   const [modal, setModal] = useState(false)
   const [form, setForm] = useState(EMPTY)
   const [isEdit, setIsEdit] = useState(false)
   const [confirm, setConfirm] = useState(null)
+
+  // Carrega os centros de custo da empresa (Fase 1 — Supabase, por empresa)
+  useEffect(() => {
+    if (!empresa?.id) return
+    const empId = empresa.id
+    ;(async () => {
+      try {
+        let cc = await getCentroCustos(empId)
+        // Semeia os centros demo desta empresa na 1ª carga (uma vez)
+        const flag = `x8_cc_seed_${empId}`
+        if (cc.length === 0 && localStorage.getItem(flag) !== '1') {
+          const demo = CENTROS_INICIAIS.filter(c => c.empresaId === empId)
+          for (const c of demo) { try { await saveCentroCusto(c, empId) } catch {} }
+          localStorage.setItem(flag, '1')
+          if (demo.length > 0) cc = await getCentroCustos(empId)
+        }
+        setCentros(cc)
+      } catch { setCentros([]) }
+    })()
+  }, [empresa])
 
   const gastos = useMemo(() => {
     const map = {}
@@ -40,17 +60,15 @@ export default function CentroCusto({ empresa, data }) {
   }, [lancamentos])
 
   const gastoTotal = Object.values(gastos).reduce((s, v) => s + v, 0)
-
   const getCentroCustoGasto = (nome) => gastos[nome.toLowerCase()] || 0
 
   const filtered = useMemo(() => {
     let list = centros
     if (tab === 'Ativos') list = list.filter(c => c.ativo)
     if (tab === 'Inativos') list = list.filter(c => !c.ativo)
-    if (filtroEmp !== 'Todas') list = list.filter(c => c.empresaId === filtroEmp)
     if (search) list = list.filter(c => c.nome.toLowerCase().includes(search.toLowerCase()))
     return list
-  }, [centros, tab, filtroEmp, search])
+  }, [centros, tab, search])
 
   const ativos = centros.filter(c => c.ativo).length
   const inativos = centros.length - ativos
@@ -62,16 +80,26 @@ export default function CentroCusto({ empresa, data }) {
   const openAdd = () => { setForm(EMPTY); setIsEdit(false); setModal(true) }
   const openEdit = c => { setForm({ ...c }); setIsEdit(true); setModal(true) }
 
-  const handleSave = () => {
-    if (!form.nome.trim()) return
-    if (isEdit) setCentros(prev => prev.map(c => c.id === form.id ? form : c))
-    else setCentros(prev => [...prev, { ...form, id: uid() }])
+  const handleSave = useCallback(async () => {
+    if (!form.nome.trim() || !empresa?.id) return
+    const cc = isEdit ? form : { ...form, id: uid() }
+    try { await saveCentroCusto(cc, empresa.id) } catch {}
+    setCentros(prev => isEdit ? prev.map(c => c.id === cc.id ? cc : c) : [...prev, cc])
     setModal(false)
-  }
+  }, [form, isEdit, empresa])
 
-  const handleDelete = (id) => { setCentros(prev => prev.filter(c => c.id !== id)); setConfirm(null) }
+  const handleDelete = useCallback(async (id) => {
+    try { await deleteCentroCusto(id) } catch {}
+    setCentros(prev => prev.filter(c => c.id !== id))
+    setConfirm(null)
+  }, [])
 
-  const empNome = (id) => EMPRESAS.find(e => e.id === id)?.nome || id
+  const toggleAtivo = useCallback(async (c) => {
+    const cc = { ...c, ativo: !c.ativo }
+    try { await saveCentroCusto(cc, empresa?.id) } catch {}
+    setCentros(prev => prev.map(x => x.id === cc.id ? cc : x))
+  }, [empresa])
+
   const TABS = ['Todos', 'Ativos', 'Inativos']
 
   return (
@@ -89,8 +117,8 @@ export default function CentroCusto({ empresa, data }) {
       <div className="g-4">
         {[
           { icon: '📊', bg: T.blueL, label: 'Total de Centros', value: centros.length, sub: 'Centros cadastrados' },
-          { icon: '✅', bg: T.greenL, label: 'Centros Ativos', value: ativos, sub: `${Math.round(ativos / centros.length * 100)}% do total` },
-          { icon: '⏸', bg: T.borderLight, label: 'Centros Inativos', value: inativos, sub: `${Math.round(inativos / centros.length * 100)}% do total` },
+          { icon: '✅', bg: T.greenL, label: 'Centros Ativos', value: ativos, sub: `${Math.round(ativos / Math.max(centros.length, 1) * 100)}% do total` },
+          { icon: '⏸', bg: T.borderLight, label: 'Centros Inativos', value: inativos, sub: `${Math.round(inativos / Math.max(centros.length, 1) * 100)}% do total` },
           { icon: '💸', bg: T.purpleL, label: 'Gasto Total (Mês)', value: fmtS(gastoTotal), sub: 'Todos os centros' },
         ].map(k => (
           <Card key={k.label} style={{ padding: '16px 18px' }}>
@@ -123,11 +151,6 @@ export default function CentroCusto({ empresa, data }) {
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar centro de custo por nome..."
             style={{ width: '100%', padding: '8px 12px 8px 32px', border: `1.5px solid ${T.border}`, borderRadius: 8, background: T.white, color: T.text, fontSize: 13, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
         </div>
-        <select value={filtroEmp} onChange={e => setFiltroEmp(e.target.value)}
-          style={{ background: T.white, border: `1.5px solid ${T.border}`, borderRadius: 8, padding: '8px 12px', color: T.text, fontSize: 13, outline: 'none', fontFamily: 'inherit' }}>
-          <option value="Todas">Todas as empresas</option>
-          {EMPRESAS.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
-        </select>
       </div>
 
       {/* Tabela */}
@@ -136,7 +159,7 @@ export default function CentroCusto({ empresa, data }) {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ background: T.bg }}>
-                {['Centro de Custo', 'Empresa', 'Responsável', 'Status', 'Gasto (Mês)', 'Ações'].map(h => (
+                {['Centro de Custo', 'Responsável', 'Status', 'Gasto (Mês)', 'Ações'].map(h => (
                   <th key={h} style={{ padding: '12px 16px', textAlign: 'left', color: T.sub, fontWeight: 600, borderBottom: `1px solid ${T.border}`, whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
@@ -159,7 +182,6 @@ export default function CentroCusto({ empresa, data }) {
                         </div>
                       </div>
                     </td>
-                    <td style={{ padding: '12px 16px', color: T.sub }}>{empNome(c.empresaId)}</td>
                     <td style={{ padding: '12px 16px' }}>
                       {c.responsavel ? (
                         <div>
@@ -179,8 +201,12 @@ export default function CentroCusto({ empresa, data }) {
                     </td>
                     <td style={{ padding: '12px 16px' }}>
                       <div style={{ display: 'flex', gap: 6 }}>
-                        <button onClick={() => openEdit(c)} style={{ background: 'none', border: `1px solid ${T.border}`, borderRadius: 6, padding: '5px 9px', cursor: 'pointer', fontSize: 14 }}>✏️</button>
-                        <button onClick={() => setConfirm(c.id)} style={{ background: 'none', border: `1px solid ${T.redL}`, borderRadius: 6, padding: '5px 9px', cursor: 'pointer', fontSize: 14, color: T.red }}>🗑</button>
+                        <button onClick={() => openEdit(c)} title="Editar" style={{ background: 'none', border: `1px solid ${T.border}`, borderRadius: 6, padding: '5px 9px', cursor: 'pointer', fontSize: 14 }}>✏️</button>
+                        <button onClick={() => toggleAtivo(c)}
+                          style={{ background: 'none', border: `1px solid ${T.border}`, borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontSize: 12, color: c.ativo ? T.sub : T.green, fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+                          {c.ativo ? 'Desativar' : 'Reativar'}
+                        </button>
+                        <button onClick={() => setConfirm(c.id)} title="Excluir" style={{ background: 'none', border: `1px solid ${T.redL}`, borderRadius: 6, padding: '5px 9px', cursor: 'pointer', fontSize: 14, color: T.red }}>🗑</button>
                       </div>
                     </td>
                   </tr>
@@ -233,13 +259,6 @@ export default function CentroCusto({ empresa, data }) {
           <Input label="Descrição" value={form.desc || ''} onChange={e => setForm(f => ({ ...f, desc: e.target.value }))} placeholder="Breve descrição" />
           <Input label="Responsável" value={form.responsavel || ''} onChange={e => setForm(f => ({ ...f, responsavel: e.target.value }))} placeholder="Nome do responsável" />
           <Input label="E-mail" type="email" value={form.email || ''} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="email@empresa.com.br" />
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ display: 'block', fontWeight: 600, fontSize: 13, color: T.text, marginBottom: 5 }}>Empresa</label>
-            <select value={form.empresaId} onChange={e => setForm(f => ({ ...f, empresaId: e.target.value }))}
-              style={{ width: '100%', background: T.white, border: `1.5px solid ${T.border}`, borderRadius: 8, padding: '9px 12px', color: T.text, fontSize: 14, outline: 'none', fontFamily: 'inherit' }}>
-              {EMPRESAS.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
-            </select>
-          </div>
         </Modal>
       )}
 

@@ -344,7 +344,7 @@ export default function SelectEmpresa({ usuario, onSelect, data, onLogout, empre
   const [detalhe, setDetalhe] = useState(null)
   const [ultimasData, setUltimasData] = useState([])
   const [showNovaEmpresa, setShowNovaEmpresa] = useState(false)
-  const foto = localStorage.getItem('x8_foto') || ''
+  const foto = usuario?.foto || ''
 
   const nome = usuario?.nome || 'Usuário'
   const primeiroNome = nome.split(' ')[0]

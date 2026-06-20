@@ -175,9 +175,8 @@ export default function Sidebar({ page, setPage, collapsed, onToggle, usuario, p
   const [userMenu, setUserMenu] = useState(false)
   const { dark, toggleTheme } = useTheme()
 
-  const savedPerfil = JSON.parse(localStorage.getItem(usuario?.id ? `x8_perfil_${usuario.id}` : 'x8_perfil_none') || '{}')
-  const nomeDisplay = savedPerfil.nome || usuario?.nome || 'Usuário'
-  const cargoDisplay = savedPerfil.cargo || usuario?.cargo || PERFIL_CARGO[usuario?.perfil] || 'Usuário'
+  const nomeDisplay = usuario?.nome || 'Usuário'
+  const cargoDisplay = usuario?.cargo || PERFIL_CARGO[usuario?.perfil] || 'Usuário'
   const inicial = (nomeDisplay[0] || 'U').toUpperCase()
 
   const [upgradeHint, setUpgradeHint] = useState(null)

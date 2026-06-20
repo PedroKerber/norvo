@@ -184,20 +184,20 @@ export const initData = () => {
 }
 
 export const genFluxoCaixaData = (lancamentos) => {
-  const days = Array.from({ length: 31 }, (_, i) => {
-    const day = i + 1
-    const date = `2026-05-${String(day).padStart(2, '0')}`
-    const entradas = lancamentos
-      .filter(l => l.tipo === 'receita' && l.data === date && l.status === 'Recebida')
-      .reduce((s, l) => s + l.valor, 0)
-    const saidas = lancamentos
-      .filter(l => l.tipo === 'despesa' && l.data === date && l.status === 'Pago')
-      .reduce((s, l) => s + l.valor, 0)
-    return { dia: `${day < 10 ? '0' : ''}${day}/05`, entradas, saidas }
+  // Agrupa pelas datas reais dos lançamentos já filtrados (sem mês/ano fixo).
+  // Respeita a empresa e o período do filtro, pois recebe a lista já filtrada.
+  const byDate = {}
+  ;(lancamentos || []).forEach(l => {
+    if (!l.data) return
+    if (!byDate[l.data]) byDate[l.data] = { entradas: 0, saidas: 0 }
+    if (l.tipo === 'receita' && l.status === 'Recebida') byDate[l.data].entradas += l.valor
+    if (l.tipo === 'despesa' && l.status === 'Pago') byDate[l.data].saidas += l.valor
   })
   let acumulado = 0
-  return days.map(d => {
+  return Object.keys(byDate).sort().map(date => {
+    const d = byDate[date]
     acumulado += d.entradas - d.saidas
-    return { ...d, saldo: acumulado }
+    const [, mm, dd] = date.split('-')
+    return { dia: `${dd}/${mm}`, entradas: d.entradas, saidas: d.saidas, saldo: acumulado }
   })
 }

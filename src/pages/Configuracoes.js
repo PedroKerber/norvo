@@ -60,17 +60,35 @@ const Overlay = ({ children, onClose }) => (
   </div>
 )
 
+// Redimensiona a foto (avatar pequeno) antes de salvar no user_metadata — evita peso excessivo
+const resizeImg = (file, max = 256) => new Promise((resolve, reject) => {
+  const reader = new FileReader()
+  reader.onload = ev => {
+    const img = new Image()
+    img.onload = () => {
+      let { width, height } = img
+      if (width >= height && width > max) { height = Math.round(height * max / width); width = max }
+      else if (height > max) { width = Math.round(width * max / height); height = max }
+      const canvas = document.createElement('canvas')
+      canvas.width = width; canvas.height = height
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height)
+      resolve(canvas.toDataURL('image/jpeg', 0.82))
+    }
+    img.onerror = reject
+    img.src = ev.target.result
+  }
+  reader.onerror = reject
+  reader.readAsDataURL(file)
+})
+
 export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpdate, setPage, onReset }) {
   const fotoRef = useRef(null)
   const { limparTudo } = useNotif()
-  const perfilKey = usuario?.id ? `x8_perfil_${usuario.id}` : 'x8_perfil'
-  const savedPerfil = JSON.parse(localStorage.getItem(perfilKey) || '{}')
-
-  const [foto, setFoto] = useState(localStorage.getItem(usuario?.id ? `x8_foto_${usuario.id}` : '') || '')
-  const [nome, setNome] = useState(savedPerfil.nome || usuario?.nome || '')
-  const [cargo, setCargo] = useState(savedPerfil.cargo || usuario?.cargo || '')
-  const [telefone, setTelefone] = useState(savedPerfil.telefone || '')
-  const [cpf, setCpf] = useState(savedPerfil.cpf || '')
+  const [foto, setFoto] = useState(usuario?.foto || '')
+  const [nome, setNome] = useState(usuario?.nome || '')
+  const [cargo, setCargo] = useState(usuario?.cargo || '')
+  const [telefone, setTelefone] = useState(usuario?.telefone || '')
+  const [cpf, setCpf] = useState(usuario?.cpf || '')
   const [showCpf, setShowCpf] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -129,26 +147,24 @@ export default function Configuracoes({ usuario, onLogout, empresa, onPerfilUpda
     }
   }
 
-  const handleFoto = (e) => {
+  const handleFoto = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = (ev) => {
-      const b64 = ev.target.result
+    try {
+      const b64 = await resizeImg(file)
       setFoto(b64)
-      if (usuario?.id) localStorage.setItem(`x8_foto_${usuario.id}`, b64)
+      await supabase.auth.updateUser({ data: { foto: b64 } })
       onPerfilUpdate && onPerfilUpdate()
       showToast('Foto atualizada com sucesso!')
+    } catch {
+      showToast('Não foi possível atualizar a foto', false)
     }
-    reader.onerror = () => showToast('Não foi possível atualizar a foto', false)
-    reader.readAsDataURL(file)
   }
 
   const salvar = async () => {
     if (!nome.trim()) return showToast('Nome é obrigatório', false)
     setSaving(true)
-    localStorage.setItem(perfilKey, JSON.stringify({ nome, cargo, telefone, cpf }))
-    try { await supabase.auth.updateUser({ data: { nome: nome.trim(), cargo } }) } catch {}
+    try { await supabase.auth.updateUser({ data: { nome: nome.trim(), cargo, telefone, cpf } }) } catch {}
     onPerfilUpdate && onPerfilUpdate()
     await new Promise(r => setTimeout(r, 700))
     setSaving(false)

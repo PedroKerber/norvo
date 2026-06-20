@@ -3,7 +3,7 @@ import { useMobile } from './context/MobileContext'
 import { T, uid } from './theme'
 import { initData, EMPRESAS, CATS_KZL } from './data'
 import { getModuloStatus, labelSegmento, labelPlano, getLimitesPlano } from './modules'
-import { supabase, getAllLancamentos, getLancamentos, saveLancamento, deleteLancamento, saveLancamentos, getMetas, saveMeta, deleteMeta, signIn, signOut, deleteAllLancamentos, deleteAllMetas, getEmpresas, seedEmpresas, saveEmpresa, updateEmpresa, setEmpresaStatus } from './supabase'
+import { supabase, getAllLancamentos, getLancamentos, saveLancamento, deleteLancamento, saveLancamentos, getMetas, saveMeta, deleteMeta, signIn, signOut, deleteAllLancamentos, deleteAllMetas, getEmpresas, seedEmpresas, saveEmpresa, updateEmpresa, setEmpresaStatus, getCategorias, saveCategoria, deleteCategoria } from './supabase'
 
 import Sidebar from './components/Sidebar'
 import TopBar from './components/TopBar'
@@ -50,7 +50,7 @@ export default function App() {
   const [page, setPage] = useState(() => localStorage.getItem('x8_last_page') || 'dashboard')
   const [appData, setAppData] = useState(() => initData())
   const [empresas, setEmpresas] = useState(EMPRESAS)
-  const [extraCats, setExtraCats] = useState(() => { try { return JSON.parse(localStorage.getItem('x8_cats') || '[]') } catch { return [] } })
+  const [extraCats, setExtraCats] = useState([])
   const [loading, setLoading] = useState(true)
   const [perfilFoto, setPerfilFoto] = useState('')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('x8_sidebar') === '1')
@@ -62,16 +62,16 @@ export default function App() {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session?.user) {
         const u = data.session.user
-        setUsuario({ id: u.id, email: u.email, nome: u.user_metadata?.nome || u.email.split('@')[0], perfil: u.user_metadata?.perfil || 'master', cargo: u.user_metadata?.cargo || '' })
-        setPerfilFoto(localStorage.getItem(`x8_foto_${u.id}`) || '')
+        setUsuario({ id: u.id, email: u.email, nome: u.user_metadata?.nome || u.email.split('@')[0], perfil: u.user_metadata?.perfil || 'master', cargo: u.user_metadata?.cargo || '', telefone: u.user_metadata?.telefone || '', cpf: u.user_metadata?.cpf || '', foto: u.user_metadata?.foto || '' })
+        setPerfilFoto(u.user_metadata?.foto || '')
       }
       setLoading(false)
     })
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         const u = session.user
-        setUsuario({ id: u.id, email: u.email, nome: u.user_metadata?.nome || u.email.split('@')[0], perfil: u.user_metadata?.perfil || 'master', cargo: u.user_metadata?.cargo || '' })
-        setPerfilFoto(localStorage.getItem(`x8_foto_${u.id}`) || '')
+        setUsuario({ id: u.id, email: u.email, nome: u.user_metadata?.nome || u.email.split('@')[0], perfil: u.user_metadata?.perfil || 'master', cargo: u.user_metadata?.cargo || '', telefone: u.user_metadata?.telefone || '', cpf: u.user_metadata?.cpf || '', foto: u.user_metadata?.foto || '' })
+        setPerfilFoto(u.user_metadata?.foto || '')
       } else {
         setUsuario(null)
         setEmpresa(null)
@@ -165,6 +165,26 @@ export default function App() {
     ]).then(([lancamentos, metas]) => {
       setAppData(prev => ({ ...prev, [empId]: { ...prev[empId], lancamentos, metas } }))
     }).catch(console.error)
+
+    // Categorias customizadas da empresa (Fase 1 — Supabase, por empresa)
+    ;(async () => {
+      try {
+        let cats = await getCategorias(empId)
+        // Migração única do x8_cats (global) → empresa ativa, se ainda não migrado
+        if (cats.length === 0 && localStorage.getItem('x8_cats_migrado') !== '1') {
+          let legado = []
+          try { legado = JSON.parse(localStorage.getItem('x8_cats') || '[]') } catch {}
+          if (legado.length > 0) {
+            for (const c of legado) {
+              try { await saveCategoria({ ...c, status: 'ativa' }, empId) } catch {}
+            }
+            localStorage.setItem('x8_cats_migrado', '1')
+            cats = await getCategorias(empId)
+          }
+        }
+        setExtraCats(cats)
+      } catch { setExtraCats([]) }
+    })()
   }, [usuario, empresa])
 
   const empData = empresa ? (appData[empresa.id] || { lancamentos: [], metas: [] }) : { lancamentos: [], metas: [] }
@@ -172,14 +192,16 @@ export default function App() {
 
   const handleLogin = useCallback(async (email, senha) => {
     const user = await signIn(email, senha)
-    setUsuario({ id: user.id, email: user.email, nome: user.user_metadata?.nome || user.email.split('@')[0], perfil: user.user_metadata?.perfil || 'master', cargo: user.user_metadata?.cargo || '' })
-    setPerfilFoto(localStorage.getItem(`x8_foto_${user.id}`) || '')
+    setUsuario({ id: user.id, email: user.email, nome: user.user_metadata?.nome || user.email.split('@')[0], perfil: user.user_metadata?.perfil || 'master', cargo: user.user_metadata?.cargo || '', telefone: user.user_metadata?.telefone || '', cpf: user.user_metadata?.cpf || '', foto: user.user_metadata?.foto || '' })
+    setPerfilFoto(user.user_metadata?.foto || '')
   }, [])
 
   const handlePerfilUpdate = useCallback(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      const uid = data.session?.user?.id
-      if (uid) setPerfilFoto(localStorage.getItem(`x8_foto_${uid}`) || '')
+    supabase.auth.getUser().then(({ data }) => {
+      const u = data.user
+      if (!u) return
+      setUsuario({ id: u.id, email: u.email, nome: u.user_metadata?.nome || u.email.split('@')[0], perfil: u.user_metadata?.perfil || 'master', cargo: u.user_metadata?.cargo || '', telefone: u.user_metadata?.telefone || '', cpf: u.user_metadata?.cpf || '', foto: u.user_metadata?.foto || '' })
+      setPerfilFoto(u.user_metadata?.foto || '')
     })
   }, [])
 
@@ -319,21 +341,24 @@ export default function App() {
     } catch {}
   }, [usuario])
 
-  const handleSaveCat = useCallback((cat, isEdit) => {
-    setExtraCats(prev => {
-      const next = isEdit ? prev.map(c => c.id === cat.id ? cat : c) : [...prev, cat]
-      try { localStorage.setItem('x8_cats', JSON.stringify(next)) } catch {}
-      return next
-    })
+  const handleSaveCat = useCallback(async (cat, isEdit) => {
+    if (!empresa) return
+    const item = { ...cat, status: cat.status || 'ativa' }
+    try { await saveCategoria(item, empresa.id) } catch {}
+    setExtraCats(prev => isEdit ? prev.map(c => c.id === item.id ? item : c) : [...prev, item])
+  }, [empresa])
+
+  const handleDeleteCat = useCallback(async (id) => {
+    try { await deleteCategoria(id) } catch {}
+    setExtraCats(prev => prev.filter(c => c.id !== id))
   }, [])
 
-  const handleDeleteCat = useCallback((id) => {
-    setExtraCats(prev => {
-      const next = prev.filter(c => c.id !== id)
-      try { localStorage.setItem('x8_cats', JSON.stringify(next)) } catch {}
-      return next
-    })
-  }, [])
+  const handleSetCatStatus = useCallback(async (cat, status) => {
+    if (!empresa) return
+    const item = { ...cat, status }
+    try { await saveCategoria(item, empresa.id) } catch {}
+    setExtraCats(prev => prev.map(c => c.id === item.id ? item : c))
+  }, [empresa])
 
   const handleReset = useCallback(async () => {
     if (!empresa) return
@@ -373,8 +398,9 @@ export default function App() {
     )
   }
 
-  const effectiveExtraCats = empresa?.id === 'kzl' ? CATS_KZL : extraCats
-  const sharedProps = { empresa, data: empData, setPage, onSave: handleSave, onDelete: handleDelete, onSaveBatch: handleSaveBatch, extraCats: effectiveExtraCats }
+  const effectiveExtraCats = empresa?.id === 'kzl' ? [...CATS_KZL, ...extraCats] : extraCats
+  const extraCatsAtivas = effectiveExtraCats.filter(c => c.status !== 'inativa')
+  const sharedProps = { empresa, data: empData, setPage, onSave: handleSave, onDelete: handleDelete, onSaveBatch: handleSaveBatch, extraCats: extraCatsAtivas }
 
   const renderPage = () => {
     if (PLACEHOLDER_PAGES.includes(page)) return <Placeholder page={page} />
@@ -446,7 +472,7 @@ export default function App() {
       case 'comparativo_empresas': return <ComparativoEmpresas appData={appData} empresas={empresas} />
       case 'empresas': return <Empresas setPage={setPage} empresas={empresas} onSaveEmpresa={handleSaveEmpresa} onUpdateEmpresa={handleUpdateEmpresa} onSetStatus={handleSetEmpresaStatus} plano={empresa?.plano} limiteEmpresas={getLimitesPlano(empresa?.plano).empresas} />
       case 'meu_plano': return <MeuPlano empresa={empresa} empresas={empresas} usuario={usuario} setPage={setPage} />
-      case 'categorias': return <Categorias {...sharedProps} onSaveCat={handleSaveCat} onDeleteCat={handleDeleteCat} />
+      case 'categorias': return <Categorias {...sharedProps} extraCats={effectiveExtraCats} onSaveCat={handleSaveCat} onDeleteCat={handleDeleteCat} onSetStatus={handleSetCatStatus} />
       case 'centro_custo': return <CentroCusto {...sharedProps} />
       case 'usuarios': return <Usuarios usuario={usuario} />
       case 'configuracoes': return <Configuracoes usuario={usuario} onLogout={handleLogout} empresa={empresa} onPerfilUpdate={handlePerfilUpdate} setPage={setPage} onReset={handleReset} />

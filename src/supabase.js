@@ -170,6 +170,123 @@ export const updateEmpresa = async (id, fields) => {
 
 export const setEmpresaStatus = async (id, status) => updateEmpresa(id, { status })
 
+// ── Categorias (Fase 1 — persistência por empresa) ─────────────────────────
+const mapCategoriaRow = (r) => ({
+  id: r.id,
+  nome: r.nome,
+  tipo: r.tipo,
+  cor: r.cor || '#6b7280',
+  variavel: !!r.variavel,
+  descricao: r.descricao || '',
+  status: r.status || 'ativa',
+  builtin: false,
+  empresaId: r.empresa_id,
+})
+
+export const getCategorias = async (empresaId) => {
+  const { data, error } = await supabase
+    .from('categorias')
+    .select('*')
+    .eq('empresa_id', empresaId)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return (data || []).map(mapCategoriaRow)
+}
+
+export const saveCategoria = async (cat, empresaId) => {
+  const row = {
+    id: cat.id, empresa_id: empresaId, nome: cat.nome, tipo: cat.tipo,
+    cor: cat.cor || '#6b7280', variavel: !!cat.variavel,
+    descricao: cat.descricao || null, status: cat.status || 'ativa',
+  }
+  const { error } = await supabase.from('categorias').upsert(row)
+  if (error) throw error
+}
+
+export const deleteCategoria = async (id) => {
+  const { error } = await supabase.from('categorias').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ── Centro de Custos (Fase 1 — persistência por empresa) ───────────────────
+const mapCentroRow = (r) => ({
+  id: r.id,
+  nome: r.nome,
+  desc: r.descricao || '',
+  responsavel: r.responsavel || '',
+  email: r.email || '',
+  ativo: r.ativo !== false,
+  empresaId: r.empresa_id,
+})
+
+export const getCentroCustos = async (empresaId) => {
+  const { data, error } = await supabase
+    .from('centro_custos')
+    .select('*')
+    .eq('empresa_id', empresaId)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return (data || []).map(mapCentroRow)
+}
+
+export const saveCentroCusto = async (cc, empresaId) => {
+  const row = {
+    id: cc.id, empresa_id: empresaId, nome: cc.nome,
+    descricao: cc.desc || null, responsavel: cc.responsavel || null,
+    email: cc.email || null, ativo: cc.ativo !== false,
+  }
+  const { error } = await supabase.from('centro_custos').upsert(row)
+  if (error) throw error
+}
+
+export const deleteCentroCusto = async (id) => {
+  const { error } = await supabase.from('centro_custos').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ── Fechamento Mensal (Fase 1 — estado por empresa × competência + histórico) ─
+export const isMesFechado = async (empresaId, competencia) => {
+  const { data, error } = await supabase
+    .from('mes_fechado')
+    .select('fechado')
+    .eq('empresa_id', empresaId)
+    .eq('competencia', competencia)
+    .maybeSingle()
+  if (error) throw error
+  return !!(data && data.fechado)
+}
+
+export const setMesFechado = async (empresaId, competencia, fechado, usuarioId) => {
+  const row = {
+    empresa_id: empresaId, competencia, fechado,
+    fechado_por: usuarioId || null, fechado_em: new Date().toISOString(),
+  }
+  const { error } = await supabase.from('mes_fechado').upsert(row, { onConflict: 'empresa_id,competencia' })
+  if (error) throw error
+}
+
+export const getHistoricoFechamento = async (empresaId) => {
+  const { data, error } = await supabase
+    .from('mes_fechado_historico')
+    .select('*')
+    .eq('empresa_id', empresaId)
+    .order('criado_em', { ascending: false })
+    .limit(100)
+  if (error) throw error
+  return (data || []).map(r => ({
+    tipo: r.tipo, motivo: r.motivo || '', usuario: r.usuario_nome || 'Sistema',
+    data: r.criado_em, mes: r.competencia,
+  }))
+}
+
+export const addHistoricoFechamento = async (empresaId, competencia, tipo, motivo, usuarioId, usuarioNome) => {
+  const { error } = await supabase.from('mes_fechado_historico').insert({
+    empresa_id: empresaId, competencia, tipo,
+    motivo: motivo || null, usuario_id: usuarioId || null, usuario_nome: usuarioNome || null,
+  })
+  if (error) throw error
+}
+
 export const signIn = async (email, senha) => {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password: senha })
   if (error) throw error
