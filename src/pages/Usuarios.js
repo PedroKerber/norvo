@@ -3,7 +3,7 @@ import emailjs from '@emailjs/browser'
 import { T } from '../theme'
 import { Card, Btn } from '../components/ui'
 import { EMPRESAS } from '../data'
-import { supabase } from '../supabase'
+import { supabase, apiFetch } from '../supabase'
 import { EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, EMAILJS_PUBLIC_KEY } from '../config/emailjs'
 import { useMobile } from '../context/MobileContext'
 
@@ -151,7 +151,7 @@ export default function Usuarios({ usuario }) {
   const loadSupabaseUsers = useCallback(async () => {
     setSupabaseLoading(true)
     try {
-      const res = await fetch('/api/list-users')
+      const res = await apiFetch('/api/list-users')
       if (!res.ok) throw new Error('API error')
       const { users } = await res.json()
       const localMap = getLocal()
@@ -189,7 +189,7 @@ export default function Usuarios({ usuario }) {
   const syncPermissions = useCallback(async (collaboratorUserId, empresaIds, perfil) => {
     if (!usuario?.id || !collaboratorUserId || collaboratorUserId === usuario.id) return
     try {
-      await fetch('/api/set-permissions', {
+      await apiFetch('/api/set-permissions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ownerUserId: usuario.id, collaboratorUserId, empresaIds: empresaIds || [], role: perfil || 'viewer' }),
@@ -241,7 +241,7 @@ export default function Usuarios({ usuario }) {
           ))
           localStorage.setItem(`x8_perms_${editId}`, JSON.stringify(formPerms))
         } catch {}
-        fetch('/api/update-user', {
+        apiFetch('/api/update-user', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId: editId, nome: form.nome, cargo: form.cargo, perfil: form.perfil }),
@@ -252,7 +252,7 @@ export default function Usuarios({ usuario }) {
         setModalTipo(null)
       } else {
         setModalTipo(null)
-        const inviteRes = await fetch('/api/invite-user', {
+        const inviteRes = await apiFetch('/api/invite-user', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: form.email, nome: form.nome, perfil: form.perfil, cargo: form.cargo }),
@@ -314,7 +314,7 @@ export default function Usuarios({ usuario }) {
       localStorage.removeItem(`x8_perms_${id}`)
     } catch {}
     try {
-      await fetch('/api/delete-user', {
+      await apiFetch('/api/delete-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: id }),
@@ -353,7 +353,7 @@ export default function Usuarios({ usuario }) {
     const u = usuarios.find(x => x.id === id)
     setConfirmCancelId(null)
     try {
-      const res = await fetch('/api/delete-user', {
+      const res = await apiFetch('/api/delete-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: id }),
@@ -371,7 +371,7 @@ export default function Usuarios({ usuario }) {
   const handleInvite = async (u) => {
     setInviteLoading(u.id); setActionMenu(null)
     try {
-      const res  = await fetch('/api/resend-invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: u.email, nome: u.nome }) })
+      const res  = await apiFetch('/api/resend-invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: u.email, nome: u.nome }) })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Erro ao gerar convite')
       await logAudit('convite_enviado', { email: u.email })
@@ -409,7 +409,7 @@ export default function Usuarios({ usuario }) {
     if (!senhaUser?.id || !tempSenha) return
     setSenhaAplicando(true)
     try {
-      const res = await fetch('/api/set-password', {
+      const res = await apiFetch('/api/set-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: senhaUser.id, password: tempSenha }),

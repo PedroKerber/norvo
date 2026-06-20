@@ -1,21 +1,16 @@
-const { createClient } = require('@supabase/supabase-js')
+const { applyCors, adminClient, requireMaster } = require('./_auth')
 
 module.exports = async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
-
-  if (req.method === 'OPTIONS') return res.status(200).end()
+  applyCors(req, res)
+  if (req.method === 'OPTIONS') return res.status(204).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método não permitido' })
+
+  const supabaseAdmin = adminClient()
+  const caller = await requireMaster(req, res, supabaseAdmin)
+  if (!caller) return
 
   const { email, nome, perfil, cargo } = req.body || {}
   if (!email) return res.status(400).json({ error: 'Email obrigatório' })
-
-  const supabaseAdmin = createClient(
-    process.env.REACT_APP_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
 
   // Step 1: Create user with confirmed email so recovery link works immediately.
   // If user already exists, find their ID from the list.

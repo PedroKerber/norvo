@@ -301,3 +301,14 @@ export const getSession = async () => {
   const { data } = await supabase.auth.getSession()
   return data.session
 }
+
+// ── Chamadas autenticadas aos endpoints /api (Fase 2 · Etapa 1 — Hotfix) ─────
+// Anexa Authorization: Bearer <access_token> da sessão atual. Os endpoints /api
+// exigem esse token e validam o perfil (master) no servidor.
+export const apiFetch = async (path, options = {}) => {
+  const { data } = await supabase.auth.getSession()
+  const token = data && data.session ? data.session.access_token : null
+  const headers = { ...(options.headers || {}) }
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  return fetch(path, { ...options, headers })
+}
