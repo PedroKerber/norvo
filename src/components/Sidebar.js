@@ -171,12 +171,12 @@ function BottomNav({ page, setPage, onMenuOpen }) {
   )
 }
 
-export default function Sidebar({ page, setPage, collapsed, onToggle, usuario, perfilFoto, onLogout, empresa, isMobile, mobileOpen, onMobileOpen, onMobileClose }) {
+export default function Sidebar({ page, setPage, collapsed, onToggle, usuario, perfilFoto, onLogout, empresa, isMobile, mobileOpen, onMobileOpen, onMobileClose, acesso }) {
   const [userMenu, setUserMenu] = useState(false)
   const { dark, toggleTheme } = useTheme()
 
   const nomeDisplay = usuario?.nome || 'Usuário'
-  const cargoDisplay = usuario?.cargo || PERFIL_CARGO[usuario?.perfil] || 'Usuário'
+  const cargoDisplay = acesso?.isMaster ? 'Master' : (usuario?.cargo || PERFIL_CARGO[usuario?.perfil] || 'Usuário')
   const inicial = (nomeDisplay[0] || 'U').toUpperCase()
 
   const [upgradeHint, setUpgradeHint] = useState(null)
@@ -199,11 +199,14 @@ export default function Sidebar({ page, setPage, collapsed, onToggle, usuario, p
   // Filtra grupos: oculta itens bloqueados por segmento; mantém (com lock) os bloqueados por plano
   const segmento = empresa?.segmento
   const plano    = empresa?.plano
+  const isMaster = !!acesso?.isMaster
+  const ADMIN_ONLY = ['empresas', 'usuarios', 'logs']   // só master vê (Fase 2 · Etapa 2)
   const visibleGroups = NAV_GROUPS.map(group => ({
     ...group,
     items: group.items
       .map(item => ({ ...item, status: getModuloStatus(item.id, segmento, plano) }))
-      .filter(item => item.status !== 'bloqueado_segmento'),
+      .filter(item => item.status !== 'bloqueado_segmento')
+      .filter(item => isMaster || !ADMIN_ONLY.includes(item.id)),
   })).filter(group => group.items.length > 0)
 
   // ── MOBILE RENDER ────────────────────────────────────────────────────────────

@@ -3,7 +3,7 @@ import { useMobile } from './context/MobileContext'
 import { T, uid } from './theme'
 import { initData, EMPRESAS, CATS_KZL } from './data'
 import { getModuloStatus, labelSegmento, labelPlano, getLimitesPlano } from './modules'
-import { supabase, getAllLancamentos, getLancamentos, saveLancamento, deleteLancamento, saveLancamentos, getMetas, saveMeta, deleteMeta, signIn, signOut, deleteAllLancamentos, deleteAllMetas, getEmpresas, seedEmpresas, saveEmpresa, updateEmpresa, setEmpresaStatus, getCategorias, saveCategoria, deleteCategoria } from './supabase'
+import { supabase, getAllLancamentos, getLancamentos, saveLancamento, deleteLancamento, saveLancamentos, getMetas, saveMeta, deleteMeta, signIn, signOut, deleteAllLancamentos, deleteAllMetas, getEmpresas, seedEmpresas, saveEmpresa, updateEmpresa, setEmpresaStatus, getCategorias, saveCategoria, deleteCategoria, getMyAccess } from './supabase'
 
 import Sidebar from './components/Sidebar'
 import TopBar from './components/TopBar'
@@ -53,6 +53,7 @@ export default function App() {
   const [extraCats, setExtraCats] = useState([])
   const [loading, setLoading] = useState(true)
   const [perfilFoto, setPerfilFoto] = useState('')
+  const [acesso, setAcesso] = useState(null) // { isMaster, empresas } — verdade do servidor (Fase 2)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('x8_sidebar') === '1')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const sidebarW = sidebarCollapsed ? 82 : 280
@@ -62,7 +63,7 @@ export default function App() {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session?.user) {
         const u = data.session.user
-        setUsuario({ id: u.id, email: u.email, nome: u.user_metadata?.nome || u.email.split('@')[0], perfil: u.user_metadata?.perfil || 'master', cargo: u.user_metadata?.cargo || '', telefone: u.user_metadata?.telefone || '', cpf: u.user_metadata?.cpf || '', foto: u.user_metadata?.foto || '' })
+        setUsuario({ id: u.id, email: u.email, nome: u.user_metadata?.nome || u.email.split('@')[0], perfil: u.user_metadata?.perfil || null, cargo: u.user_metadata?.cargo || '', telefone: u.user_metadata?.telefone || '', cpf: u.user_metadata?.cpf || '', foto: u.user_metadata?.foto || '' })
         setPerfilFoto(u.user_metadata?.foto || '')
       }
       setLoading(false)
@@ -70,12 +71,13 @@ export default function App() {
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         const u = session.user
-        setUsuario({ id: u.id, email: u.email, nome: u.user_metadata?.nome || u.email.split('@')[0], perfil: u.user_metadata?.perfil || 'master', cargo: u.user_metadata?.cargo || '', telefone: u.user_metadata?.telefone || '', cpf: u.user_metadata?.cpf || '', foto: u.user_metadata?.foto || '' })
+        setUsuario({ id: u.id, email: u.email, nome: u.user_metadata?.nome || u.email.split('@')[0], perfil: u.user_metadata?.perfil || null, cargo: u.user_metadata?.cargo || '', telefone: u.user_metadata?.telefone || '', cpf: u.user_metadata?.cpf || '', foto: u.user_metadata?.foto || '' })
         setPerfilFoto(u.user_metadata?.foto || '')
       } else {
         setUsuario(null)
         setEmpresa(null)
         setPerfilFoto('')
+        setAcesso(null)
       }
     })
     return () => listener.subscription.unsubscribe()
@@ -94,7 +96,7 @@ export default function App() {
       try { return JSON.parse(localStorage.getItem(`x8_empresas_${usuario.id}`) || '[]') } catch { return [] }
     })()
     const fallbackAll = [...EMPRESAS, ...customLS]
-    const isOwner = !usuario.perfil || usuario.perfil === 'master' || usuario.perfil === 'admin'
+    // isOwner agora vem do servidor (user_roles.is_master) — definido dentro do IIFE.
 
     const applyEmpresas = (list) => {
       setEmpresas(list)
@@ -106,6 +108,9 @@ export default function App() {
     }
 
     ;(async () => {
+      const acc = await getMyAccess()
+      setAcesso(acc)
+      const isOwner = acc.isMaster
       try {
         let emps = await getEmpresas()
         if (isOwner) {
@@ -192,7 +197,7 @@ export default function App() {
 
   const handleLogin = useCallback(async (email, senha) => {
     const user = await signIn(email, senha)
-    setUsuario({ id: user.id, email: user.email, nome: user.user_metadata?.nome || user.email.split('@')[0], perfil: user.user_metadata?.perfil || 'master', cargo: user.user_metadata?.cargo || '', telefone: user.user_metadata?.telefone || '', cpf: user.user_metadata?.cpf || '', foto: user.user_metadata?.foto || '' })
+    setUsuario({ id: user.id, email: user.email, nome: user.user_metadata?.nome || user.email.split('@')[0], perfil: user.user_metadata?.perfil || null, cargo: user.user_metadata?.cargo || '', telefone: user.user_metadata?.telefone || '', cpf: user.user_metadata?.cpf || '', foto: user.user_metadata?.foto || '' })
     setPerfilFoto(user.user_metadata?.foto || '')
   }, [])
 
@@ -200,7 +205,7 @@ export default function App() {
     supabase.auth.getUser().then(({ data }) => {
       const u = data.user
       if (!u) return
-      setUsuario({ id: u.id, email: u.email, nome: u.user_metadata?.nome || u.email.split('@')[0], perfil: u.user_metadata?.perfil || 'master', cargo: u.user_metadata?.cargo || '', telefone: u.user_metadata?.telefone || '', cpf: u.user_metadata?.cpf || '', foto: u.user_metadata?.foto || '' })
+      setUsuario({ id: u.id, email: u.email, nome: u.user_metadata?.nome || u.email.split('@')[0], perfil: u.user_metadata?.perfil || null, cargo: u.user_metadata?.cargo || '', telefone: u.user_metadata?.telefone || '', cpf: u.user_metadata?.cpf || '', foto: u.user_metadata?.foto || '' })
       setPerfilFoto(u.user_metadata?.foto || '')
     })
   }, [])
@@ -216,6 +221,7 @@ export default function App() {
       .filter(k => k.startsWith('x8_perms_'))
       .forEach(k => localStorage.removeItem(k))
     setPerfilFoto('')
+    setAcesso(null)
     setUsuario(null)
     setEmpresas(EMPRESAS)
     setEmpresa(null)
@@ -405,6 +411,28 @@ export default function App() {
   const renderPage = () => {
     if (PLACEHOLDER_PAGES.includes(page)) return <Placeholder page={page} />
 
+    // ── Guarda por PERFIL (Fase 2 · Etapa 2): páginas administrativas só p/ master ──
+    const ADMIN_PAGES = ['usuarios', 'empresas', 'logs']
+    if (ADMIN_PAGES.includes(page) && !acesso?.isMaster) {
+      return (
+        <div style={{ textAlign: 'center', padding: '64px 24px', fontFamily: "'Segoe UI', sans-serif" }}>
+          <div style={{ fontSize: 52, marginBottom: 16 }}>🔒</div>
+          <h2 style={{ fontWeight: 800, fontSize: 22, margin: '0 0 10px', color: 'var(--text)' }}>
+            {acesso ? 'Sem permissão' : 'Verificando permissões…'}
+          </h2>
+          <p style={{ color: 'var(--text-sub)', fontSize: 15, maxWidth: 420, margin: '0 auto 10px', lineHeight: 1.6 }}>
+            {acesso ? 'Esta área é restrita ao perfil Master.' : 'Aguarde um instante.'}
+          </p>
+          {acesso && (
+            <button onClick={() => setPage('dashboard')}
+              style={{ marginTop: 24, background: T.primary, color: '#fff', border: 'none', borderRadius: 8, padding: '10px 24px', fontFamily: 'inherit', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+              ← Voltar ao Dashboard
+            </button>
+          )}
+        </div>
+      )
+    }
+
     // ── Guarda de acesso: segmento oculta; plano exibe tela de upgrade ───────
     const moduloStatus = getModuloStatus(page, empresa?.segmento, empresa?.plano)
 
@@ -492,7 +520,7 @@ export default function App() {
           setSidebarCollapsed(n)
           localStorage.setItem('x8_sidebar', n ? '1' : '')
         }}
-        usuario={usuario} perfilFoto={perfilFoto} onLogout={handleLogout} empresa={empresa}
+        usuario={usuario} perfilFoto={perfilFoto} onLogout={handleLogout} empresa={empresa} acesso={acesso}
         isMobile={isMobile}
         mobileOpen={mobileMenuOpen}
         onMobileOpen={() => setMobileMenuOpen(true)}

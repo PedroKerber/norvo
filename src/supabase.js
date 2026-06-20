@@ -312,3 +312,18 @@ export const apiFetch = async (path, options = {}) => {
   if (token) headers['Authorization'] = `Bearer ${token}`
   return fetch(path, { ...options, headers })
 }
+
+// ── Acesso do usuário (Fase 2 · Etapa 2 — perfil como verdade do servidor) ──
+// Lê is_master (user_roles) e os papéis por empresa (user_empresa_access).
+// RLS garante que cada usuário só enxerga o próprio acesso.
+export const getMyAccess = async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { isMaster: false, empresas: {} }
+  const [{ data: roleRow }, { data: vinc }] = await Promise.all([
+    supabase.from('user_roles').select('is_master').eq('user_id', user.id).maybeSingle(),
+    supabase.from('user_empresa_access').select('empresa_id, role').eq('collaborator_user_id', user.id),
+  ])
+  const empresas = {}
+  ;(vinc || []).forEach(v => { empresas[v.empresa_id] = v.role })
+  return { isMaster: !!(roleRow && roleRow.is_master), empresas }
+}

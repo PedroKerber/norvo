@@ -52,10 +52,16 @@ function masterIds() {
     .split(',').map(s => s.trim()).filter(Boolean)
 }
 
-function isMaster(user) {
+// Fonte de verdade: user_roles (banco). Fallbacks transitórios: NORVO_MASTER_IDS e app_metadata.
+async function isMaster(user, admin) {
   if (!user) return false
-  if (masterIds().includes(user.id)) return true
-  const meta = user.app_metadata || {}
+  try {
+    const { data } = await (admin || adminClient())
+      .from('user_roles').select('is_master').eq('user_id', user.id).maybeSingle()
+    if (data && data.is_master) return true
+  } catch (_) { /* tabela ainda não criada / erro → cai nos fallbacks */ }
+  if (masterIds().includes(user.id)) return true            // fallback: env NORVO_MASTER_IDS
+  const meta = user.app_metadata || {}                       // fallback: app_metadata (server-side)
   const perfil = meta.perfil || meta.role
   return perfil === 'master' || perfil === 'admin'
 }
@@ -77,7 +83,7 @@ async function requireAuth(req, res, admin) {
 async function requireMaster(req, res, admin) {
   const user = await requireAuth(req, res, admin)
   if (!user) return null
-  if (!isMaster(user)) {
+  if (!(await isMaster(user, admin))) {
     res.status(403).json({ error: 'Acesso negado: requer perfil Master' }); return null
   }
   return user
