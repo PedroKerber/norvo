@@ -96,3 +96,108 @@ export const deletePersonalTransaction = async (id) => {
   const { error } = await supabase.from('personal_transactions').delete().eq('id', id)
   if (error) throw error
 }
+
+// ── Cartões de crédito ──────────────────────────────────────────────────────
+const mapCard = (r) => ({
+  id: r.id, name: r.name, institution: r.institution || '', brand: r.brand || '',
+  limit: Number(r.limit_amount) || 0, closingDay: r.closing_day || null, dueDay: r.due_day || null,
+  color: r.color || '#0D2545', isActive: r.is_active !== false,
+})
+export const getPersonalCards = async () => {
+  const { data, error } = await supabase.from('personal_credit_cards').select('*').order('created_at', { ascending: true })
+  if (error) throw error
+  return (data || []).map(mapCard)
+}
+export const savePersonalCard = async (c, userId) => {
+  const row = {
+    id: c.id, user_id: userId, name: c.name, institution: c.institution || null, brand: c.brand || null,
+    limit_amount: c.limit || 0, closing_day: c.closingDay || null, due_day: c.dueDay || null,
+    color: c.color || null, is_active: c.isActive !== false,
+  }
+  const { error } = await supabase.from('personal_credit_cards').upsert(row)
+  if (error) throw error
+}
+export const deletePersonalCard = async (id) => {
+  const { error } = await supabase.from('personal_credit_cards').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ── Investimentos ───────────────────────────────────────────────────────────
+const mapInvest = (r) => ({
+  id: r.id, name: r.name, type: r.investment_type || '', institution: r.institution || '',
+  invested: Number(r.amount_invested) || 0, current: Number(r.current_amount) || 0,
+  profitability: r.profitability != null ? Number(r.profitability) : null,
+  date: r.application_date, liquidity: r.liquidity || '', notes: r.notes || '',
+})
+export const getPersonalInvestments = async () => {
+  const { data, error } = await supabase.from('personal_investments').select('*').order('created_at', { ascending: true })
+  if (error) throw error
+  return (data || []).map(mapInvest)
+}
+export const savePersonalInvestment = async (i, userId) => {
+  const row = {
+    id: i.id, user_id: userId, name: i.name, investment_type: i.type || null, institution: i.institution || null,
+    amount_invested: i.invested || 0, current_amount: i.current != null ? i.current : (i.invested || 0),
+    profitability: i.profitability != null && i.profitability !== '' ? i.profitability : null,
+    application_date: i.date || null, liquidity: i.liquidity || null, notes: i.notes || null,
+  }
+  const { error } = await supabase.from('personal_investments').upsert(row)
+  if (error) throw error
+}
+export const deletePersonalInvestment = async (id) => {
+  const { error } = await supabase.from('personal_investments').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ── Dívidas ─────────────────────────────────────────────────────────────────
+const mapDebt = (r) => ({
+  id: r.id, creditor: r.creditor, description: r.description || '',
+  total: Number(r.total_amount) || 0, remaining: Number(r.remaining_amount) || 0,
+  installmentsTotal: r.installments_total || null, installmentsPaid: r.installments_paid || 0,
+  dueDate: r.due_date, interestRate: r.interest_rate != null ? Number(r.interest_rate) : null,
+  status: r.status || 'em_aberto', notes: r.notes || '',
+})
+export const getPersonalDebts = async () => {
+  const { data, error } = await supabase.from('personal_debts').select('*').order('created_at', { ascending: true })
+  if (error) throw error
+  return (data || []).map(mapDebt)
+}
+export const savePersonalDebt = async (d, userId) => {
+  const row = {
+    id: d.id, user_id: userId, creditor: d.creditor, description: d.description || null,
+    total_amount: d.total || 0, remaining_amount: d.remaining != null ? d.remaining : (d.total || 0),
+    installments_total: d.installmentsTotal || null, installments_paid: d.installmentsPaid || 0,
+    due_date: d.dueDate || null, interest_rate: d.interestRate != null && d.interestRate !== '' ? d.interestRate : null,
+    status: d.status || 'em_aberto', notes: d.notes || null,
+  }
+  const { error } = await supabase.from('personal_debts').upsert(row)
+  if (error) throw error
+}
+export const deletePersonalDebt = async (id) => {
+  const { error } = await supabase.from('personal_debts').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ── Metas ───────────────────────────────────────────────────────────────────
+const mapGoal = (r) => ({
+  id: r.id, name: r.name, target: Number(r.target_amount) || 0, current: Number(r.current_amount) || 0,
+  deadline: r.deadline, category: r.category || '', status: r.status || 'ativa', notes: r.notes || '',
+})
+export const getPersonalGoals = async () => {
+  const { data, error } = await supabase.from('personal_goals').select('*').order('created_at', { ascending: true })
+  if (error) throw error
+  return (data || []).map(mapGoal)
+}
+export const savePersonalGoal = async (g, userId) => {
+  const row = {
+    id: g.id, user_id: userId, name: g.name, target_amount: g.target || 0,
+    current_amount: g.current || 0, deadline: g.deadline || null, category: g.category || null,
+    status: g.status || 'ativa', notes: g.notes || null,
+  }
+  const { error } = await supabase.from('personal_goals').upsert(row)
+  if (error) throw error
+}
+export const deletePersonalGoal = async (id) => {
+  const { error } = await supabase.from('personal_goals').delete().eq('id', id)
+  if (error) throw error
+}

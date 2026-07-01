@@ -56,8 +56,33 @@ export const RECORRENCIAS_PF     = ['Único', 'Mensal', 'Semanal', 'Anual']
 export const STATUS_RECEITA_PF   = ['Recebida', 'A receber']
 export const STATUS_DESPESA_PF   = ['Pago', 'A Pagar', 'Pendente', 'Atrasado']
 
+// ── F2 — Cartões / Investimentos / Dívidas / Metas ──────────────────────────
+export const BANDEIRAS_CARTAO_PF = ['Visa', 'Mastercard', 'Elo', 'American Express', 'Hipercard', 'Outro']
+export const CORES_CARTAO_PF = ['#0D2545', '#7c3aed', '#dc2626', '#16a34a', '#ea580c', '#0891b2', '#111827', '#6366f1']
+export const LIQUIDEZ_PF = ['Imediata', 'D+1', 'D+30', 'No vencimento', 'Baixa']
+
+export const STATUS_DIVIDA_PF = [
+  { id: 'em_aberto', label: 'Em aberto', cor: '#2563eb' },
+  { id: 'quitada',   label: 'Quitada',   cor: '#16a34a' },
+  { id: 'atrasada',  label: 'Atrasada',  cor: '#dc2626' },
+]
+
+export const STATUS_META_PF = [
+  { id: 'ativa',      label: 'Ativa',      cor: '#2563eb' },
+  { id: 'concluida',  label: 'Concluída',  cor: '#16a34a' },
+  { id: 'pausada',    label: 'Pausada',    cor: '#ca8a04' },
+]
+
+export const CATS_META_PF = [
+  'Reserva de emergência', 'Comprar imóvel', 'Comprar carro', 'Viagem',
+  'Aposentadoria', 'Educação', 'Investir', 'Outros',
+]
+
 // Helpers de lookup
 export const catReceitaNome = (id) => CATS_RECEITA_PF.find(c => c.id === id)?.nome || id || '—'
 export const catDespesaNome = (id) => CATS_DESPESA_PF.find(c => c.id === id)?.nome || id || '—'
 export const catNomePF = (tipo, id) => (tipo === 'receita' ? catReceitaNome : catDespesaNome)(id)
 export const tipoContaLabel = (id) => TIPOS_CONTA_PF.find(t => t.id === id)?.label || id || '—'
+export const investTypeLabel = (id) => TIPOS_INVESTIMENTO_PF.find(t => t.id === id)?.label || id || '—'
+export const statusDividaInfo = (id) => STATUS_DIVIDA_PF.find(s => s.id === id) || { label: id || '—', cor: '#9ca3af' }
+export const statusMetaInfo = (id) => STATUS_META_PF.find(s => s.id === id) || { label: id || '—', cor: '#9ca3af' }

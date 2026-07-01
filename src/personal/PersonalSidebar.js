@@ -59,6 +59,15 @@ export const PF_NAV_GROUPS = [
     { id: 'receitas', label: 'Receitas', icon: 'receitas' },
     { id: 'despesas', label: 'Despesas', icon: 'despesas' },
     { id: 'contas',   label: 'Contas',   icon: 'contas'   },
+    { id: 'cartoes',  label: 'Cartões',  icon: 'cartoes'  },
+  ]},
+  { label: 'Patrimônio', items: [
+    { id: 'investimentos', label: 'Investimentos', icon: 'investimentos' },
+    { id: 'dividas',       label: 'Dívidas',       icon: 'dividas'       },
+    { id: 'metas',         label: 'Metas',         icon: 'metas'         },
+  ]},
+  { label: 'Análise', items: [
+    { id: 'relatorios', label: 'Relatórios', icon: 'relatorios' },
   ]},
 ]
 

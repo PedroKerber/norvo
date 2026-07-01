@@ -8,7 +8,7 @@ const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'O
 
 const somaMes = (txs, mes, tipo) => txs.filter(t => t.tipo === tipo && (t.data || '').startsWith(mes)).reduce((s, t) => s + (t.valor || 0), 0)
 
-export default function PersonalDashboard({ usuario, profile, accounts, transactions }) {
+export default function PersonalDashboard({ usuario, profile, accounts, transactions, investments = [], debts = [] }) {
   const hoje = new Date()
   const mesAtual = hoje.toISOString().slice(0, 7)
   const prevDate = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1)
@@ -21,8 +21,10 @@ export default function PersonalDashboard({ usuario, profile, accounts, transact
   const economia = recMes - despMes
   const saldoContas = useMemo(() => accounts.reduce((s, a) => s + (a.saldoAtual || 0), 0), [accounts])
 
-  // Investimentos / Dívidas / Cartão entram na F2 → hoje ainda sem dados (zero real)
-  const totalInvest = 0, totalDividas = 0, faturaCartao = 0
+  // Investimentos / Dívidas / Cartão (F2) — dados reais do Supabase
+  const totalInvest = useMemo(() => investments.reduce((s, i) => s + (i.current || 0), 0), [investments])
+  const totalDividas = useMemo(() => debts.filter(d => d.status !== 'quitada').reduce((s, d) => s + (d.remaining || 0), 0), [debts])
+  const faturaCartao = useMemo(() => transactions.filter(t => t.tipo === 'despesa' && t.cartaoId && (t.data || '').startsWith(mesAtual)).reduce((s, t) => s + (t.valor || 0), 0), [transactions, mesAtual])
   const patrimonio = saldoContas + totalInvest - totalDividas
 
   const delta = (cur, prev) => prev > 0 ? ((cur - prev) / prev) * 100 : (cur > 0 ? 100 : 0)
@@ -74,9 +76,9 @@ export default function PersonalDashboard({ usuario, profile, accounts, transact
             <KpiCard icon="📉" iconBg={T.redL} label="Despesas do mês" value={fmt(despMes)} delta={delta(despMes, despPrev)} deltaLabel="vs mês anterior" />
             <KpiCard icon="🐷" iconBg={T.blueL} label="Economia do mês" value={fmt(economia)} sub={economia >= 0 ? 'Você fechou no positivo' : 'Gastos acima da renda'} />
             <KpiCard icon="🏦" iconBg={T.primaryLight} label="Saldo em contas" value={fmt(saldoContas)} sub={`${accounts.length} conta(s)`} />
-            <KpiCard icon="💹" iconBg={T.purpleL} label="Investimentos" value={fmt(totalInvest)} sub="Chega na Fase 2" />
-            <KpiCard icon="💳" iconBg={T.orangeL} label="Cartão (fatura)" value={fmt(faturaCartao)} sub="Chega na Fase 2" />
-            <KpiCard icon="📊" iconBg={T.redL} label="Dívidas" value={fmt(totalDividas)} sub="Chega na Fase 2" />
+            <KpiCard icon="💹" iconBg={T.purpleL} label="Investimentos" value={fmt(totalInvest)} sub="Patrimônio atual" />
+            <KpiCard icon="💳" iconBg={T.orangeL} label="Cartão (fatura)" value={fmt(faturaCartao)} sub="Fatura do mês" />
+            <KpiCard icon="📊" iconBg={T.redL} label="Dívidas" value={fmt(totalDividas)} sub="Saldo devedor" />
             <KpiCard icon="💎" iconBg={T.cyanL} label="Patrimônio líquido" value={fmt(patrimonio)} sub="Contas + investimentos − dívidas" />
           </div>
 
