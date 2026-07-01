@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { T, fmt, errMsgAcao } from '../../theme'
 import { Card, Btn, Toast, EmptyState, Badge } from '../../components/ui'
+import { PageHeader } from '../pfui'
 
 const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 
@@ -46,18 +47,13 @@ export default function PersonalFechamento({ transactions = [], accounts = [], i
     <div>
       {toast && <Toast msg={toast.msg} type={toast.type} onDone={() => setToast(null)} />}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
-        <div>
-          <h1 style={{ fontWeight: 800, fontSize: 26, margin: 0, color: T.text }}>Fechamento mensal</h1>
-          <div style={{ color: T.sub, fontSize: 14, marginTop: 2 }}>Consolidação do mês — {MESES[mesNum - 1]}/{ano}.</div>
-        </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+      <PageHeader title="Fechamento mensal" subtitle={`Consolidação do mês — ${MESES[mesNum - 1]}/${ano}.`}
+        right={<div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           <input type="month" value={mes} onChange={e => setMes(e.target.value)} style={inputStyle} />
           {jaFechado
             ? <Badge label="✓ Fechado" color={T.green} bg={T.greenL} />
             : <Btn onClick={registrar} disabled={saving}>{saving ? 'Registrando…' : 'Registrar fechamento'}</Btn>}
-        </div>
-      </div>
+        </div>} />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 16 }}>
         <Kpi label="Receitas do mês" value={fmt(receitas)} cor={T.green} />

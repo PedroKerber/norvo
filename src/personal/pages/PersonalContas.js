@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { T, fmt, fd, uid, errMsgAcao } from '../../theme'
 import { Card, Btn, Modal, Input, Select, Toast, Confirm, EmptyState } from '../../components/ui'
+import { PageHeader, PfBtn } from '../pfui'
 import { TIPOS_CONTA_PF, tipoContaLabel } from '../../personalData'
 
 export default function PersonalContas({ accounts, transfers = [], onSaveAccount, onDeleteAccount, onSaveTransfer, onDeleteTransfer }) {
@@ -61,16 +62,11 @@ export default function PersonalContas({ accounts, transfers = [], onSaveAccount
       {toast && <Toast msg={toast.msg} type={toast.type} onDone={() => setToast(null)} />}
       {confirmId && <Confirm msg="Excluir esta conta? Lançamentos ligados a ela ficam sem conta." onYes={excluir} onNo={() => setConfirmId(null)} />}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
-        <div>
-          <h1 style={{ fontWeight: 800, fontSize: 26, margin: 0, color: T.text }}>Contas</h1>
-          <div style={{ color: T.sub, fontSize: 14, marginTop: 2 }}>Suas contas bancárias, carteiras e investimentos.</div>
-        </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {accounts.length >= 2 && <Btn variant="ghost" icon="⇄" onClick={novaTransf}>Transferir</Btn>}
-          <Btn onClick={novo} icon="+">Nova conta</Btn>
-        </div>
-      </div>
+      <PageHeader title="Contas" subtitle="Suas contas bancárias, carteiras e investimentos."
+        right={<div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {accounts.length >= 2 && <PfBtn ghost icon="⇄" onClick={novaTransf}>Transferir</PfBtn>}
+          <PfBtn icon="+" onClick={novo}>Nova conta</PfBtn>
+        </div>} />
 
       <Card style={{ padding: '16px 22px', marginBottom: 18, display: 'inline-block' }}>
         <div style={{ fontSize: 12, color: T.sub }}>Saldo total</div>

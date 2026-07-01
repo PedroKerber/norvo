@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { T, fmt, fd, errMsgAcao } from '../../theme'
 import { Card, Btn, Toast, Confirm, EmptyState, Badge } from '../../components/ui'
+import { PageHeader } from '../pfui'
 import { FREQ_RECORRENCIA_PF } from '../../personalData'
 
 const freqLabel = (id) => FREQ_RECORRENCIA_PF.find(f => f.id === id)?.label || id
@@ -29,10 +30,7 @@ export default function PersonalRecorrentes({ recurrences = [], catsReceita = []
       {toast && <Toast msg={toast.msg} type={toast.type} onDone={() => setToast(null)} />}
       {confirmId && <Confirm msg="Excluir esta recorrência? Os lançamentos já criados não são apagados." onYes={excluir} onNo={() => setConfirmId(null)} />}
 
-      <div style={{ marginBottom: 18 }}>
-        <h1 style={{ fontWeight: 800, fontSize: 26, margin: 0, color: T.text }}>Recorrentes</h1>
-        <div style={{ color: T.sub, fontSize: 14, marginTop: 2 }}>Modelos de receitas/despesas que se repetem. Crie marcando “Repetir” ao lançar em Receitas ou Despesas.</div>
-      </div>
+      <PageHeader title="Recorrentes" subtitle="Modelos de receitas/despesas que se repetem. Crie marcando “Repetir” ao lançar em Receitas ou Despesas." />
 
       {recurrences.length === 0 ? (
         <Card style={{ padding: 0 }}>

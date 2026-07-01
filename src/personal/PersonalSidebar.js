@@ -1,16 +1,18 @@
 import { useState } from 'react'
 import { T } from '../theme'
 import { useTheme } from '../context/ThemeContext'
+import { PT } from './pfui'
 
-// Paleta espelhada do Sidebar empresarial (navy + laranja)
+// Paleta premium PF: base escura + degradê preto→laranja, acento laranja vivo
 const S = {
-  bg: 'var(--sidebar-bg)',
-  active: 'rgba(244,123,32,0.15)',
+  bg: '#0B0F14',                 // base sólida (bottom nav)
+  grad: PT.sidebarGrad,          // degradê da aside/drawer
+  active: PT.orangeGrad,         // item ativo em gradiente laranja
   hover: 'rgba(255,255,255,0.06)',
-  txt: 'rgba(255,255,255,0.48)',
+  txt: 'rgba(255,255,255,0.52)',
   txtActive: '#ffffff',
-  accent: '#F47B20',
-  border: 'rgba(255,255,255,0.09)',
+  accent: PT.orange,
+  border: 'rgba(255,255,255,0.08)',
   W: 280,
   WC: 82,
 }
@@ -156,16 +158,16 @@ export default function PersonalSidebar({ page, setPage, collapsed, onToggle, us
                   style={{
                     display: 'flex', alignItems: 'center', gap: 11,
                     justifyContent: collapsed ? 'center' : 'flex-start', width: '100%',
-                    padding: collapsed ? '11px 0' : '9px 12px',
+                    padding: collapsed ? '11px 0' : '10px 12px',
                     background: active ? S.active : 'transparent', color: active ? S.txtActive : S.txt,
-                    border: 'none', borderLeft: active ? `3px solid ${S.accent}` : '3px solid transparent',
-                    borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13.5,
-                    fontWeight: active ? 600 : 400, textAlign: 'left', whiteSpace: 'nowrap', overflow: 'hidden',
+                    border: 'none', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13.5,
+                    fontWeight: active ? 700 : 500, textAlign: 'left', whiteSpace: 'nowrap', overflow: 'hidden',
+                    boxShadow: active ? '0 6px 16px rgba(255,106,0,0.35)' : 'none',
                     transition: 'background .15s, color .15s',
                   }}
                   onMouseEnter={e => { if (!active) { e.currentTarget.style.background = S.hover; e.currentTarget.style.color = '#fff' } }}
                   onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = S.txt } }}>
-                  <span style={{ color: active ? S.accent : 'inherit', display: 'flex', flexShrink: 0 }}><Ico name={item.icon} size={18} /></span>
+                  <span style={{ color: active ? '#fff' : 'inherit', display: 'flex', flexShrink: 0 }}><Ico name={item.icon} size={18} /></span>
                   {!collapsed && <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>}
                 </button>
               </div>
@@ -191,10 +193,10 @@ export default function PersonalSidebar({ page, setPage, collapsed, onToggle, us
         {mobileOpen && (
           <>
             <div onClick={onMobileClose} style={{ position: 'fixed', inset: 0, zIndex: 498, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(2px)' }} />
-            <aside style={{ position: 'fixed', left: 0, top: 0, bottom: 60, width: 288, zIndex: 499, background: S.bg, display: 'flex', flexDirection: 'column', boxShadow: '4px 0 32px rgba(0,0,0,0.45)', overflow: 'hidden' }}>
+            <aside style={{ position: 'fixed', left: 0, top: 0, bottom: 60, width: 288, zIndex: 499, background: S.grad, display: 'flex', flexDirection: 'column', boxShadow: '4px 0 32px rgba(0,0,0,0.45)', overflow: 'hidden' }}>
               <div style={{ height: 64, display: 'flex', alignItems: 'center', gap: 10, padding: '0 16px 0 18px', borderBottom: `1px solid ${S.border}`, flexShrink: 0 }}>
                 <LogoMark />
-                <span style={{ fontWeight: 800, fontSize: 17, color: '#fff', letterSpacing: -0.3, flex: 1 }}>Norvo <span style={{ color: S.accent, fontSize: 12, fontWeight: 700 }}>Pessoal</span></span>
+                <span style={{ fontWeight: 800, fontSize: 17, color: '#fff', letterSpacing: -0.3, flex: 1 }}>NORVO <span style={{ background: S.active, color: '#fff', fontSize: 10, fontWeight: 800, borderRadius: 6, padding: '2px 8px', letterSpacing: 0.4, verticalAlign: 'middle' }}>Pessoal</span></span>
                 <button onClick={onMobileClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: S.txt, padding: 6, display: 'flex' }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
@@ -227,11 +229,11 @@ export default function PersonalSidebar({ page, setPage, collapsed, onToggle, us
 
   // ── DESKTOP ──
   return (
-    <aside style={{ width: collapsed ? S.WC : S.W, background: S.bg, height: '100vh', display: 'flex', flexDirection: 'column', position: 'fixed', left: 0, top: 0, zIndex: 300, transition: 'width .2s ease', overflow: 'hidden' }}>
+    <aside style={{ width: collapsed ? S.WC : S.W, background: S.grad, height: '100vh', display: 'flex', flexDirection: 'column', position: 'fixed', left: 0, top: 0, zIndex: 300, transition: 'width .2s ease', overflow: 'hidden' }}>
       <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: collapsed ? '0 12px' : '0 10px 0 18px', borderBottom: `1px solid ${S.border}`, flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflow: 'hidden', flex: collapsed ? 0 : 1 }}>
           <LogoMark />
-          {!collapsed && <span style={{ fontWeight: 800, fontSize: 17, color: '#fff', letterSpacing: -0.3, whiteSpace: 'nowrap' }}>Norvo <span style={{ color: S.accent, fontSize: 12, fontWeight: 700 }}>Pessoal</span></span>}
+          {!collapsed && <span style={{ fontWeight: 800, fontSize: 17, color: '#fff', letterSpacing: -0.3, whiteSpace: 'nowrap' }}>NORVO <span style={{ background: S.active, color: '#fff', fontSize: 10, fontWeight: 800, borderRadius: 6, padding: '2px 8px', letterSpacing: 0.4, verticalAlign: 'middle' }}>Pessoal</span></span>}
         </div>
         <button onClick={onToggle} title={collapsed ? 'Expandir menu' : 'Recolher menu'} style={{ background: 'none', border: 'none', cursor: 'pointer', color: S.txt, padding: 5, borderRadius: 7, display: 'flex', flexShrink: 0 }}
           onMouseEnter={e => { e.currentTarget.style.background = S.hover; e.currentTarget.style.color = '#fff' }}

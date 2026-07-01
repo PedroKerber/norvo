@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { ResponsiveContainer, ComposedChart, Line, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from 'recharts'
 import { T, fmt, fmtS, fmtPct } from '../../theme'
 import { Card, EmptyState, Badge } from '../../components/ui'
+import { PT, PageHeader, MetricCard } from '../pfui'
 import { tipoContaLabel, investTypeLabel, statusDividaInfo } from '../../personalData'
 
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
@@ -27,13 +28,6 @@ export default function PersonalPatrimonio({ accounts, investments, debts, snaps
 
   const temDados = accounts.length > 0 || investments.length > 0 || debts.length > 0
 
-  const KpiBig = ({ label, value, cor, sub }) => (
-    <Card style={{ padding: '18px 20px' }}>
-      <div style={{ fontSize: 13, color: T.sub }}>{label}</div>
-      <div style={{ fontWeight: 800, fontSize: 24, color: cor || T.text, marginTop: 6 }}>{value}</div>
-      {sub && <div style={{ fontSize: 12, color: T.muted, marginTop: 3 }}>{sub}</div>}
-    </Card>
-  )
   const MiniList = ({ title, rows, empty }) => (
     <Card style={{ padding: 20 }}>
       <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: T.text }}>{title}</div>
@@ -48,13 +42,8 @@ export default function PersonalPatrimonio({ accounts, investments, debts, snaps
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
-        <div>
-          <h1 style={{ fontWeight: 800, fontSize: 26, margin: 0, color: T.text }}>Patrimônio</h1>
-          <div style={{ color: T.sub, fontSize: 14, marginTop: 2 }}>Sua visão patrimonial consolidada.</div>
-        </div>
-        <Badge label={positivo ? '● Patrimônio positivo' : '● Patrimônio negativo'} color={positivo ? T.green : T.red} bg={(positivo ? T.green : T.red) + '18'} />
-      </div>
+      <PageHeader title="Patrimônio" subtitle="Sua visão patrimonial consolidada."
+        right={<Badge label={positivo ? '● Patrimônio positivo' : '● Patrimônio negativo'} color={positivo ? PT.green : PT.red} bg={(positivo ? PT.green : PT.red) + '18'} />} />
 
       {!temDados ? (
         <Card style={{ padding: 0 }}>
@@ -65,10 +54,10 @@ export default function PersonalPatrimonio({ accounts, investments, debts, snaps
         <>
           {/* KPIs */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 14, marginBottom: 16 }}>
-            <KpiBig label="Total em contas" value={fmt(totalContas)} cor={T.primary} sub={`${accounts.length} conta(s)`} />
-            <KpiBig label="Total investido" value={fmt(totalInvest)} cor={T.blue} sub={`${investments.length} ativo(s)`} />
-            <KpiBig label="Total de dívidas" value={fmt(totalDividas)} cor={T.red} sub={`${debts.filter(d => d.status !== 'quitada').length} em aberto`} />
-            <KpiBig label="Patrimônio líquido" value={fmt(patrimonio)} cor={positivo ? T.green : T.red} sub="Contas + investimentos − dívidas" />
+            <MetricCard icon="🏦" label="Total em contas" value={fmt(totalContas)} sub={`${accounts.length} conta(s)`} />
+            <MetricCard icon="💹" label="Total investido" value={fmt(totalInvest)} valueColor={T.blue} sub={`${investments.length} ativo(s)`} />
+            <MetricCard icon="📊" label="Total de dívidas" value={fmt(totalDividas)} valueColor={PT.red} sub={`${debts.filter(d => d.status !== 'quitada').length} em aberto`} />
+            <MetricCard icon="💎" label="Patrimônio líquido" value={fmt(patrimonio)} valueColor={positivo ? PT.green : PT.red} sub="Contas + investimentos − dívidas" />
           </div>
 
           {/* Evolução + Distribuição */}

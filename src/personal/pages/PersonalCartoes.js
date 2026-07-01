@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { T, fmt, fd, uid, errMsgAcao } from '../../theme'
 import { Card, Btn, Modal, Input, Select, Toast, Confirm, EmptyState, Badge } from '../../components/ui'
+import { PageHeader } from '../pfui'
 import { BANDEIRAS_CARTAO_PF, CORES_CARTAO_PF } from '../../personalData'
 
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
@@ -75,13 +76,7 @@ export default function PersonalCartoes({ cards, transactions, accounts = [], ca
       {toast && <Toast msg={toast.msg} type={toast.type} onDone={() => setToast(null)} />}
       {confirmId && <Confirm msg="Excluir este cartão? As despesas ligadas a ele não são apagadas." onYes={excluir} onNo={() => setConfirmId(null)} />}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
-        <div>
-          <h1 style={{ fontWeight: 800, fontSize: 26, margin: 0, color: T.text }}>Cartões</h1>
-          <div style={{ color: T.sub, fontSize: 14, marginTop: 2 }}>Seus cartões de crédito e faturas.</div>
-        </div>
-        <Btn onClick={novo} icon="+">Novo cartão</Btn>
-      </div>
+      <PageHeader title="Cartões" subtitle="Seus cartões de crédito e faturas." actionLabel="Novo cartão" actionIcon="+" onAction={novo} />
 
       {/* Resumo */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 18 }}>

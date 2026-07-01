@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { T, fmt, fd, uid, errMsgAcao } from '../../theme'
 import { Card, Btn, Modal, Input, Select, Toast, Confirm, EmptyState, Badge, FilterBar, SearchInput } from '../../components/ui'
+import { PageHeader } from '../pfui'
 import { CATS_META_PF, STATUS_META_PF, statusMetaInfo } from '../../personalData'
 
 export default function PersonalMetas({ goals, onSaveGoal, onDeleteGoal }) {
@@ -50,13 +51,8 @@ export default function PersonalMetas({ goals, onSaveGoal, onDeleteGoal }) {
       {toast && <Toast msg={toast.msg} type={toast.type} onDone={() => setToast(null)} />}
       {confirmId && <Confirm msg="Excluir esta meta?" onYes={excluir} onNo={() => setConfirmId(null)} />}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
-        <div>
-          <h1 style={{ fontWeight: 800, fontSize: 26, margin: 0, color: T.text }}>Metas</h1>
-          <div style={{ color: T.sub, fontSize: 14, marginTop: 2 }}>Seus objetivos financeiros.</div>
-        </div>
-        <Btn onClick={novo} icon="+">Nova meta</Btn>
-      </div>
+      <PageHeader title="Metas" subtitle="Seus objetivos financeiros."
+        actionLabel="Nova meta" actionIcon="+" onAction={novo} />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 18 }}>
         <Card style={{ padding: '16px 20px' }}><div style={{ fontSize: 12, color: T.sub }}>Total das metas</div><div style={{ fontWeight: 800, fontSize: 22, color: T.text, marginTop: 4 }}>{fmt(totalAlvo)}</div></Card>

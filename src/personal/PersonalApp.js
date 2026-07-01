@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { T } from '../theme'
 import { useMobile } from '../context/MobileContext'
+import './pf.css'
 import {
   getPersonalAccounts, savePersonalAccount, deletePersonalAccount,
   getPersonalTransactions, savePersonalTransaction, deletePersonalTransaction,
@@ -258,7 +259,7 @@ export default function PersonalApp({ usuario, profile, perfilFoto, onLogout }) 
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: T.bg, fontFamily: "'Segoe UI', sans-serif" }}>
+    <div className="pf-scope" style={{ display: 'flex', minHeight: '100vh', background: T.bg, fontFamily: "'Segoe UI', sans-serif" }}>
       <PersonalSidebar
         page={page} setPage={setPage}
         collapsed={sidebarCollapsed}

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import * as XLSX from 'xlsx'
 import { T, fmt, fd, uid, errMsgAcao } from '../../theme'
 import { Card, Btn, Toast, EmptyState } from '../../components/ui'
+import { PageHeader } from '../pfui'
 
 // Normaliza chave de coluna: minúsculo, sem acento, sem espaço
 const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
@@ -77,10 +78,7 @@ export default function PersonalImportar({ accounts = [], catsReceita = [], cats
     <div>
       {toast && <Toast msg={toast.msg} type={toast.type} onDone={() => setToast(null)} />}
 
-      <div style={{ marginBottom: 18 }}>
-        <h1 style={{ fontWeight: 800, fontSize: 26, margin: 0, color: T.text }}>Importar</h1>
-        <div style={{ color: T.sub, fontSize: 14, marginTop: 2 }}>Importe receitas e despesas de um arquivo Excel/CSV.</div>
-      </div>
+      <PageHeader title="Importar" subtitle="Importe receitas e despesas de um arquivo Excel/CSV." />
 
       <Card style={{ padding: 20, marginBottom: 16 }}>
         <div style={{ fontSize: 13, color: T.sub, marginBottom: 12 }}>

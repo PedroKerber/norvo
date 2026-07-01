@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { T, fmt, fmtPct, fd, uid, errMsgAcao } from '../../theme'
 import { Card, Btn, Modal, Input, Select, Table, Toast, Confirm, EmptyState, FilterBar, SearchInput } from '../../components/ui'
+import { PageHeader } from '../pfui'
 import { TIPOS_INVESTIMENTO_PF, LIQUIDEZ_PF, investTypeLabel } from '../../personalData'
 
 export default function PersonalInvestimentos({ investments, onSaveInvestment, onDeleteInvestment }) {
@@ -73,13 +74,7 @@ export default function PersonalInvestimentos({ investments, onSaveInvestment, o
       {toast && <Toast msg={toast.msg} type={toast.type} onDone={() => setToast(null)} />}
       {confirmId && <Confirm msg="Excluir este investimento?" onYes={excluir} onNo={() => setConfirmId(null)} />}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
-        <div>
-          <h1 style={{ fontWeight: 800, fontSize: 26, margin: 0, color: T.text }}>Investimentos</h1>
-          <div style={{ color: T.sub, fontSize: 14, marginTop: 2 }}>Sua carteira e evolução patrimonial.</div>
-        </div>
-        <Btn onClick={novo} icon="+">Novo investimento</Btn>
-      </div>
+      <PageHeader title="Investimentos" subtitle="Sua carteira e evolução patrimonial." actionLabel="Novo investimento" actionIcon="+" onAction={novo} />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 18 }}>
         <Card style={{ padding: '16px 20px' }}><div style={{ fontSize: 12, color: T.sub }}>Total investido</div><div style={{ fontWeight: 800, fontSize: 22, color: T.text, marginTop: 4 }}>{fmt(totalInvestido)}</div></Card>

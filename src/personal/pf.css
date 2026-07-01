@@ -1,0 +1,79 @@
+/* ============================================================================
+   NORVO · Plano Pessoa Física — camada visual (escopada em .pf-scope)
+   Sobrescreve tokens SÓ dentro do ambiente PF — não afeta o empresarial.
+   Estilo de referência: laranja premium, fundo claro, cards suaves.
+   ============================================================================ */
+
+.pf-scope {
+  /* Fundo e superfícies */
+  --bg: #F8F9FB;
+  --card: #ffffff;
+  --border: #eef1f5;
+  --border-light: #f3f5f9;
+  /* Sombras suaves premium */
+  --shadow: 0 1px 2px rgba(17,24,39,0.04), 0 4px 14px rgba(17,24,39,0.05);
+  --shadow-md: 0 8px 28px rgba(17,24,39,0.10);
+  --shadow-lg: 0 16px 40px rgba(17,24,39,0.14);
+  /* Tint da marca (laranja de referência) */
+  --primary-light: #FFEDE0;
+  /* Paleta PF (tokens auxiliares) */
+  --pf-orange: #FF6A00;
+  --pf-orange-2: #FF8A1C;
+  --pf-orange-soft: #FFEDE0;
+
+  background: var(--bg);
+}
+
+/* Dark mode dentro do PF: mantém coerência, sombras mais fundas */
+body.dark .pf-scope {
+  --bg: #0b1220;
+  --card: #131c2e;
+  --border: rgba(255,255,255,0.08);
+  --border-light: rgba(255,255,255,0.05);
+  --shadow: 0 1px 3px rgba(0,0,0,0.4), 0 6px 18px rgba(0,0,0,0.35);
+  --shadow-md: 0 10px 30px rgba(0,0,0,0.5);
+  --primary-light: rgba(255,106,0,0.16);
+  --pf-orange-soft: rgba(255,106,0,0.16);
+}
+
+/* Cartão premium: raio maior + hover sutil (aplicado via .pf-card) */
+.pf-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  transition: box-shadow .18s ease, transform .18s ease;
+}
+.pf-card-hover:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+
+/* Bloco de ícone laranja (quadrado arredondado) */
+.pf-ico {
+  width: 40px; height: 40px; border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 19px; flex-shrink: 0;
+  background: var(--pf-orange-soft); color: var(--pf-orange);
+}
+
+/* Botão primário premium (laranja da referência) */
+.pf-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  background: var(--pf-orange); color: #fff; border: none;
+  border-radius: 10px; padding: 10px 18px; font-size: 14px; font-weight: 700;
+  cursor: pointer; font-family: inherit; white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(255,106,0,0.28); transition: filter .15s, box-shadow .15s;
+  min-height: 42px;
+}
+.pf-btn:hover { filter: brightness(1.04); box-shadow: 0 6px 16px rgba(255,106,0,0.34); }
+.pf-btn:disabled { opacity: .6; cursor: not-allowed; }
+.pf-btn-ghost {
+  background: var(--card); color: var(--pf-orange);
+  border: 1.5px solid var(--pf-orange); box-shadow: none;
+}
+.pf-btn-ghost:hover { background: var(--pf-orange-soft); }
+
+/* Título de página */
+.pf-h1 { font-weight: 800; font-size: 27px; margin: 0; color: var(--text); letter-spacing: -0.02em; }
+
+@media (max-width: 768px) {
+  .pf-h1 { font-size: 22px !important; }
+}

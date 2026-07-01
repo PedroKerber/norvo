@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { T, uid, errMsgAcao } from '../../theme'
 import { Card, Btn, Modal, Input, Select, Toast, Confirm, EmptyState, Badge, FilterBar, SearchInput } from '../../components/ui'
+import { PageHeader } from '../pfui'
 import { TIPOS_CATEGORIA_PF, CORES_CATEGORIA_PF } from '../../personalData'
 
 const tipoLabel = (t) => TIPOS_CATEGORIA_PF.find(x => x.id === t)?.label || t
@@ -50,13 +51,8 @@ export default function PersonalCategorias({ categories, onSaveCategory, onDelet
       {toast && <Toast msg={toast.msg} type={toast.type} onDone={() => setToast(null)} />}
       {confirmId && <Confirm msg="Excluir esta categoria? Lançamentos antigos que a usam não são apagados (mas perdem o nome). Prefira inativar." onYes={excluir} onNo={() => setConfirmId(null)} />}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
-        <div>
-          <h1 style={{ fontWeight: 800, fontSize: 26, margin: 0, color: T.text }}>Categorias</h1>
-          <div style={{ color: T.sub, fontSize: 14, marginTop: 2 }}>Suas categorias personalizadas (somam às padrão do sistema).</div>
-        </div>
-        <Btn onClick={novo} icon="+">Nova categoria</Btn>
-      </div>
+      <PageHeader title="Categorias" subtitle="Suas categorias personalizadas (somam às padrão do sistema)."
+        actionLabel="Nova categoria" actionIcon="+" onAction={novo} />
 
       {categories.length > 0 && (
         <FilterBar>

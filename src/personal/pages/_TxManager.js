@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { T, fmt, fd, uid, errMsgAcao } from '../../theme'
 import { Card, Btn, Modal, Input, Select, Table, Toast, Confirm, EmptyState, StatusBadge } from '../../components/ui'
+import { PageHeader } from '../pfui'
 import { FORMAS_PAGAMENTO_PF, RECORRENCIAS_PF, FREQ_RECORRENCIA_PF } from '../../personalData'
 
 // Gerenciador genérico de transações pessoais (receita/despesa).
@@ -114,14 +115,8 @@ export default function TxManager({ tipo, title, accent, cats, statusOptions, tr
       {toast && <Toast msg={toast.msg} type={toast.type} onDone={() => setToast(null)} />}
       {confirmId && <Confirm msg="Deseja excluir este lançamento?" onYes={excluir} onNo={() => setConfirmId(null)} />}
 
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
-        <div>
-          <h1 style={{ fontWeight: 800, fontSize: 26, margin: 0, color: T.text }}>{title}</h1>
-          <div style={{ color: T.sub, fontSize: 14, marginTop: 2 }}>Controle suas {title.toLowerCase()} pessoais.</div>
-        </div>
-        <Btn onClick={novo} icon="+">Nova {isReceita ? 'receita' : 'despesa'}</Btn>
-      </div>
+      <PageHeader title={title} subtitle={`Controle suas ${title.toLowerCase()} pessoais.`}
+        actionLabel={`Nova ${isReceita ? 'receita' : 'despesa'}`} actionIcon="+" onAction={novo} />
 
       {/* Resumo + filtros */}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'stretch', marginBottom: 18 }}>

@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { T, fmt, uid, errMsgAcao } from '../../theme'
 import { Card, Btn, Modal, Input, Select, Toast, Confirm, EmptyState } from '../../components/ui'
+import { PageHeader } from '../pfui'
 
 export default function PersonalOrcamento({ budgets = [], transactions = [], catsDespesa = [], onSaveBudget, onDeleteBudget }) {
   const [modal, setModal] = useState(false)
@@ -52,13 +53,8 @@ export default function PersonalOrcamento({ budgets = [], transactions = [], cat
       {toast && <Toast msg={toast.msg} type={toast.type} onDone={() => setToast(null)} />}
       {confirmId && <Confirm msg="Remover este orçamento?" onYes={excluir} onNo={() => setConfirmId(null)} />}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
-        <div>
-          <h1 style={{ fontWeight: 800, fontSize: 26, margin: 0, color: T.text }}>Orçamento</h1>
-          <div style={{ color: T.sub, fontSize: 14, marginTop: 2 }}>Limites de gasto por categoria — {MESNOME}.</div>
-        </div>
-        <Btn onClick={novo} icon="+">Novo orçamento</Btn>
-      </div>
+      <PageHeader title="Orçamento" subtitle={`Limites de gasto por categoria — ${MESNOME}.`}
+        actionLabel="Novo orçamento" actionIcon="+" onAction={novo} />
 
       {budgets.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 18 }}>

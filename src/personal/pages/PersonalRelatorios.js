@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx'
 import { ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell } from 'recharts'
 import { T, fmt, fmtS, fd } from '../../theme'
 import { Card, Btn, EmptyState } from '../../components/ui'
+import { PageHeader } from '../pfui'
 import { tipoContaLabel, investTypeLabel, statusDividaInfo, statusMetaInfo } from '../../personalData'
 
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
@@ -150,18 +151,13 @@ td{padding:6px 9px;border-bottom:1px solid #f3f4f6}.ftr{padding:14px 32px;text-a
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
-        <div>
-          <h1 style={{ fontWeight: 800, fontSize: 26, margin: 0, color: T.text }}>Relatórios</h1>
-          <div style={{ color: T.sub, fontSize: 14, marginTop: 2 }}>Sua visão financeira consolidada por período.</div>
-        </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+      <PageHeader title="Relatórios" subtitle="Sua visão financeira consolidada por período."
+        right={<div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
           <div><label style={{ display: 'block', fontSize: 11, color: T.sub, fontWeight: 600, marginBottom: 4 }}>De</label><input type="month" value={de} onChange={e => setDe(e.target.value)} style={inputStyle} /></div>
           <div><label style={{ display: 'block', fontSize: 11, color: T.sub, fontWeight: 600, marginBottom: 4 }}>Até</label><input type="month" value={ate} onChange={e => setAte(e.target.value)} style={inputStyle} /></div>
           <Btn variant="ghost" icon="📄" onClick={exportPDF}>PDF</Btn>
           <Btn variant="ghost" icon="📊" onClick={exportExcel}>Excel</Btn>
-        </div>
-      </div>
+        </div>} />
 
       {/* Resumo */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 18 }}>
