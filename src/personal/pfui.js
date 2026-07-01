@@ -1,7 +1,7 @@
 // ── NORVO · Plano Pessoa Física — componentes visuais premium ───────────────
 // Reutilizáveis, alinhados à referência (laranja, cards suaves, valores grandes).
 // Presentational only — não contêm regra de negócio.
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 
 export const PT = {
   orange: '#FF6A00',
@@ -101,46 +101,164 @@ export const PfSegment = ({ value, onChange, options = [] }) => (
   </div>
 )
 
-// Atalhos de período por MÊS (retorna 'YYYY-MM'). Presets + input de mês.
-export const PfMonthPeriod = ({ value, onChange, extra = [] }) => {
-  const now = new Date()
-  const thisMonth = now.toISOString().slice(0, 7)
-  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-  const lastMonth = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`
-  const presets = [{ label: 'Este mês', v: thisMonth }, { label: 'Mês passado', v: lastMonth }, ...extra]
-  return (
-    <div className="pf-period">
-      {presets.map(p => (
-        <button key={p.v} type="button"
-          className={'pf-seg-chip' + (value === p.v ? ' active' : '')}
-          onClick={() => onChange(p.v)}>{p.label}</button>
-      ))}
-      <input type="month" className="pf-period-input" value={value} onChange={e => onChange(e.target.value)} aria-label="Mês" />
-    </div>
-  )
-}
+// ── Filtro de período premium (100% custom — SEM input date/month nativo) ────
+const _MFULL = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+const _MABBR = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+const _pad = (n) => String(n).padStart(2, '0')
+const _ymd = (y, m, d) => `${y}-${_pad(m)}-${_pad(d)}`
+const _lastDay = (y, m) => new Date(y, m, 0).getDate()
+const _brDate = (iso) => { if (!iso) return ''; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}` }
+const _mkDay = (y, m, d) => ({ from: _ymd(y, m, d), to: _ymd(y, m, d), label: _brDate(_ymd(y, m, d)), kind: 'dia' })
+const _mkMonth = (y, m) => ({ from: _ymd(y, m, 1), to: _ymd(y, m, _lastDay(y, m)), label: `${_MFULL[m - 1]} / ${y}`, kind: 'mes' })
+const _mkYear = (y) => ({ from: _ymd(y, 1, 1), to: _ymd(y, 12, 31), label: `Ano de ${y}`, kind: 'ano' })
+const _mkRange = (f, t) => ({ from: f, to: t, label: `${_brDate(f)} – ${_brDate(t)}`, kind: 'periodo' })
 
-// Atalhos de período por INTERVALO de meses (de/até 'YYYY-MM').
-export const PfRangePeriod = ({ de, ate, onChange }) => {
+// Período do mês atual (default usado pelas telas ao inicializar o estado).
+export const pfCurrentMonthPeriod = () => { const n = new Date(); return _mkMonth(n.getFullYear(), n.getMonth() + 1) }
+
+// Select estilizado numérico (dropdown nativo de lista — NÃO é calendário).
+const Nsel = ({ value, onChange, options }) => (
+  <div className="pf-fselect" style={{ flex: 1 }}>
+    <select value={value} onChange={e => onChange(Number(e.target.value))}>
+      {options.map(o => <option key={o.v} value={o.v}>{o.label}</option>)}
+    </select>
+    <span className="pf-fselect-caret" aria-hidden>▾</span>
+  </div>
+)
+
+export const PfPeriodFilter = ({ value, onChange, onClear }) => {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
   const now = new Date()
-  const ym = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-  const thisM = ym(now)
-  const presets = [
-    { label: 'Este mês', d: thisM, a: thisM },
-    { label: 'Mês passado', ...(() => { const p = new Date(now.getFullYear(), now.getMonth() - 1, 1); return { d: ym(p), a: ym(p) } })() },
-    { label: 'Últimos 3 meses', d: ym(new Date(now.getFullYear(), now.getMonth() - 2, 1)), a: thisM },
-    { label: 'Este ano', d: `${now.getFullYear()}-01`, a: thisM },
+  const curY = now.getFullYear(), curM = now.getMonth() + 1, curD = now.getDate()
+
+  const parts = (iso, fb) => { if (!iso) return fb; const [y, m, d] = iso.split('-').map(Number); return { y, m, d } }
+  const fromValue = (v) => {
+    const f = parts(v?.from, { y: curY, m: curM, d: curD })
+    const t = parts(v?.to, f)
+    const tab = v?.kind === 'ano' ? 'ano' : v?.kind === 'dia' ? 'dia' : v?.kind === 'periodo' ? 'periodo' : 'mes'
+    return { tab, dia: { ...f }, mes: { y: f.y, m: f.m }, ano: { y: f.y }, per: { s: { ...f }, e: { ...t } } }
+  }
+  const [draft, setDraft] = useState(() => fromValue(value))
+
+  useEffect(() => {
+    if (!open) return
+    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    const onKey = (e) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('mousedown', onDoc); document.addEventListener('keydown', onKey)
+    return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onKey) }
+  }, [open])
+
+  const yearOpts = []; for (let y = curY + 1; y >= curY - 8; y--) yearOpts.push({ v: y, label: String(y) })
+  const monthOpts = _MABBR.map((mn, i) => ({ v: i + 1, label: mn }))
+  const dayOpts = (y, m) => { const arr = []; for (let d = 1; d <= _lastDay(y, m); d++) arr.push({ v: d, label: _pad(d) }); return arr }
+
+  const apply = (p) => { onChange(p); setOpen(false) }
+  const applyDraft = () => {
+    const d = draft
+    if (d.tab === 'dia') apply(_mkDay(d.dia.y, d.dia.m, Math.min(d.dia.d, _lastDay(d.dia.y, d.dia.m))))
+    else if (d.tab === 'mes') apply(_mkMonth(d.mes.y, d.mes.m))
+    else if (d.tab === 'ano') apply(_mkYear(d.ano.y))
+    else {
+      let f = _ymd(d.per.s.y, d.per.s.m, Math.min(d.per.s.d, _lastDay(d.per.s.y, d.per.s.m)))
+      let t = _ymd(d.per.e.y, d.per.e.m, Math.min(d.per.e.d, _lastDay(d.per.e.y, d.per.e.m)))
+      if (f > t) { const tmp = f; f = t; t = tmp }
+      apply(_mkRange(f, t))
+    }
+  }
+
+  const yest = new Date(now); yest.setDate(curD - 1)
+  const daysAgo = (n) => { const dt = new Date(now); dt.setDate(curD - (n - 1)); return _ymd(dt.getFullYear(), dt.getMonth() + 1, dt.getDate()) }
+  const prevM = new Date(curY, curM - 2, 1)
+  const today = _ymd(curY, curM, curD)
+  const chips = [
+    { label: 'Hoje', p: { from: today, to: today, label: 'Hoje', kind: 'atalho' } },
+    { label: 'Ontem', p: (() => { const i = _ymd(yest.getFullYear(), yest.getMonth() + 1, yest.getDate()); return { from: i, to: i, label: 'Ontem', kind: 'atalho' } })() },
+    { label: 'Este mês', p: _mkMonth(curY, curM) },
+    { label: 'Mês passado', p: _mkMonth(prevM.getFullYear(), prevM.getMonth() + 1) },
+    { label: 'Últimos 7 dias', p: { from: daysAgo(7), to: today, label: 'Últimos 7 dias', kind: 'atalho' } },
+    { label: 'Últimos 30 dias', p: { from: daysAgo(30), to: today, label: 'Últimos 30 dias', kind: 'atalho' } },
+    { label: 'Últimos 90 dias', p: { from: daysAgo(90), to: today, label: 'Últimos 90 dias', kind: 'atalho' } },
+    { label: 'Este ano', p: _mkYear(curY) },
   ]
+
   return (
-    <div className="pf-period">
-      {presets.map(p => (
-        <button key={p.label} type="button"
-          className={'pf-seg-chip' + (de === p.d && ate === p.a ? ' active' : '')}
-          onClick={() => onChange(p.d, p.a)}>{p.label}</button>
-      ))}
-      <input type="month" className="pf-period-input" value={de} onChange={e => onChange(e.target.value, ate)} aria-label="De" />
-      <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>até</span>
-      <input type="month" className="pf-period-input" value={ate} onChange={e => onChange(de, e.target.value)} aria-label="Até" />
+    <div className="pf-pf" ref={ref}>
+      <button type="button" className={'pf-pf-trigger' + (open ? ' active' : '')}
+        onClick={() => { if (!open) setDraft(fromValue(value)); setOpen(o => !o) }}>
+        <span aria-hidden>📅</span>
+        <span className="pf-pf-label">{value?.label || 'Selecionar período'}</span>
+        <span className="pf-pf-caret" aria-hidden>▾</span>
+      </button>
+      {open && (
+        <div className="pf-pf-panel">
+          <div className="pf-pf-chips">
+            {chips.map(c => (
+              <button key={c.label} type="button"
+                className={'pf-seg-chip' + (value && value.label === c.p.label ? ' active' : '')}
+                onClick={() => apply(c.p)}>{c.label}</button>
+            ))}
+          </div>
+          <div className="pf-pf-tabs">
+            {[['dia', 'Dia'], ['mes', 'Mês'], ['ano', 'Ano'], ['periodo', 'Período']].map(([k, lb]) => (
+              <button key={k} type="button" className={'pf-pf-tab' + (draft.tab === k ? ' active' : '')}
+                onClick={() => setDraft(d => ({ ...d, tab: k }))}>{lb}</button>
+            ))}
+          </div>
+          <div className="pf-pf-body">
+            {draft.tab === 'dia' && (
+              <div className="pf-pf-row">
+                <Nsel value={draft.dia.d} onChange={v => setDraft(d => ({ ...d, dia: { ...d.dia, d: v } }))} options={dayOpts(draft.dia.y, draft.dia.m)} />
+                <Nsel value={draft.dia.m} onChange={v => setDraft(d => ({ ...d, dia: { ...d.dia, m: v } }))} options={monthOpts} />
+                <Nsel value={draft.dia.y} onChange={v => setDraft(d => ({ ...d, dia: { ...d.dia, y: v } }))} options={yearOpts} />
+              </div>
+            )}
+            {draft.tab === 'mes' && (
+              <>
+                <div className="pf-pf-stepper">
+                  <button type="button" onClick={() => setDraft(d => ({ ...d, mes: { ...d.mes, y: d.mes.y - 1 } }))} aria-label="Ano anterior">◀</button>
+                  <span>{draft.mes.y}</span>
+                  <button type="button" onClick={() => setDraft(d => ({ ...d, mes: { ...d.mes, y: d.mes.y + 1 } }))} aria-label="Próximo ano">▶</button>
+                </div>
+                <div className="pf-pf-grid">
+                  {_MABBR.map((mn, i) => (
+                    <button key={mn} type="button" className={'pf-pf-cell' + (draft.mes.m === i + 1 ? ' active' : '')}
+                      onClick={() => setDraft(d => ({ ...d, mes: { ...d.mes, m: i + 1 } }))}>{mn}</button>
+                  ))}
+                </div>
+              </>
+            )}
+            {draft.tab === 'ano' && (
+              <div className="pf-pf-grid">
+                {yearOpts.map(o => (
+                  <button key={o.v} type="button" className={'pf-pf-cell' + (draft.ano.y === o.v ? ' active' : '')}
+                    onClick={() => setDraft(d => ({ ...d, ano: { y: o.v } }))}>{o.v}</button>
+                ))}
+              </div>
+            )}
+            {draft.tab === 'periodo' && (
+              <>
+                <div className="pf-pf-sub">De</div>
+                <div className="pf-pf-row">
+                  <Nsel value={draft.per.s.d} onChange={v => setDraft(d => ({ ...d, per: { ...d.per, s: { ...d.per.s, d: v } } }))} options={dayOpts(draft.per.s.y, draft.per.s.m)} />
+                  <Nsel value={draft.per.s.m} onChange={v => setDraft(d => ({ ...d, per: { ...d.per, s: { ...d.per.s, m: v } } }))} options={monthOpts} />
+                  <Nsel value={draft.per.s.y} onChange={v => setDraft(d => ({ ...d, per: { ...d.per, s: { ...d.per.s, y: v } } }))} options={yearOpts} />
+                </div>
+                <div className="pf-pf-sub" style={{ marginTop: 10 }}>Até</div>
+                <div className="pf-pf-row">
+                  <Nsel value={draft.per.e.d} onChange={v => setDraft(d => ({ ...d, per: { ...d.per, e: { ...d.per.e, d: v } } }))} options={dayOpts(draft.per.e.y, draft.per.e.m)} />
+                  <Nsel value={draft.per.e.m} onChange={v => setDraft(d => ({ ...d, per: { ...d.per, e: { ...d.per.e, m: v } } }))} options={monthOpts} />
+                  <Nsel value={draft.per.e.y} onChange={v => setDraft(d => ({ ...d, per: { ...d.per, e: { ...d.per.e, y: v } } }))} options={yearOpts} />
+                </div>
+              </>
+            )}
+          </div>
+          <div className="pf-pf-foot">
+            {onClear && <button type="button" className="pf-clear" onClick={() => { onClear(); setOpen(false) }}>Limpar período</button>}
+            <button type="button" className="pf-pf-apply" onClick={applyDraft}>Aplicar</button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

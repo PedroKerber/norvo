@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { T, fmt, fd, uid, errMsgAcao } from '../../theme'
 import { Card, Btn, Modal, Input, Select, Table, Toast, Confirm, EmptyState, StatusBadge } from '../../components/ui'
-import { PageHeader, PfFilterBar, PfMonthPeriod, PfSelect } from '../pfui'
+import { PageHeader, PfFilterBar, PfPeriodFilter, PfSelect, pfCurrentMonthPeriod } from '../pfui'
 import { FORMAS_PAGAMENTO_PF, RECORRENCIAS_PF, FREQ_RECORRENCIA_PF } from '../../personalData'
 
 // Gerenciador genérico de transações pessoais (receita/despesa).
@@ -9,9 +9,8 @@ import { FORMAS_PAGAMENTO_PF, RECORRENCIAS_PF, FREQ_RECORRENCIA_PF } from '../..
 export default function TxManager({ tipo, title, accent, cats, statusOptions, transactions, accounts, cards = [], onSaveTx, onSaveTxBatch, onSaveRecurrence, onDeleteTx }) {
   const isReceita = tipo === 'receita'
   const hoje = new Date().toISOString().slice(0, 10)
-  const mesAtual = hoje.slice(0, 7)
 
-  const [mes, setMes] = useState(mesAtual)
+  const [period, setPeriod] = useState(() => pfCurrentMonthPeriod())
   const [fCat, setFCat] = useState('')
   const [busca, setBusca] = useState('')
   const [fConta, setFConta] = useState('')
@@ -28,7 +27,8 @@ export default function TxManager({ tipo, title, accent, cats, statusOptions, tr
   const catNome = (id) => cats.find(c => c.id === id)?.nome || id || '—'
   const catCor  = (id) => cats.find(c => c.id === id)?.cor || T.muted
   const contaNome = (id) => accounts.find(a => a.id === id)?.nome || '—'
-  const mesLabel = (m) => { const [y, mo] = (m || '').split('-'); return mo ? `${mo}/${y}` : m }
+  const defaultPeriod = pfCurrentMonthPeriod()
+  const periodChanged = period.from !== defaultPeriod.from || period.to !== defaultPeriod.to
 
   // Chips rápidos de status (data-driven). Tokens especiais: __rec (recorrentes), __card (via cartão).
   const statusChips = isReceita
@@ -37,7 +37,7 @@ export default function TxManager({ tipo, title, accent, cats, statusOptions, tr
 
   const lista = useMemo(() => {
     let l = transactions.filter(t => t.tipo === tipo)
-    if (mes) l = l.filter(t => (t.data || '').startsWith(mes))
+    if (period) l = l.filter(t => { const d = t.data || ''; return d >= period.from && d <= period.to })
     if (fCat) l = l.filter(t => t.categoria === fCat)
     if (fConta) l = l.filter(t => t.accountId === fConta)
     if (fCartao) l = l.filter(t => t.cartaoId === fCartao)
@@ -46,7 +46,7 @@ export default function TxManager({ tipo, title, accent, cats, statusOptions, tr
     else if (fStatus) l = l.filter(t => t.status === fStatus)
     if (busca.trim()) { const q = busca.trim().toLowerCase(); l = l.filter(t => (t.desc || '').toLowerCase().includes(q) || catNome(t.categoria).toLowerCase().includes(q)) }
     return l
-  }, [transactions, tipo, mes, fCat, fConta, fCartao, fStatus, busca]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [transactions, tipo, period, fCat, fConta, fCartao, fStatus, busca]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const total = useMemo(() => lista.reduce((s, t) => s + (t.valor || 0), 0), [lista])
 
@@ -139,7 +139,7 @@ export default function TxManager({ tipo, title, accent, cats, statusOptions, tr
       <PfFilterBar
         search={busca} onSearch={setBusca} searchPlaceholder="Buscar por descrição ou categoria…"
         segments={{ value: fStatus, onChange: setFStatus, options: statusChips }}
-        inline={<PfMonthPeriod value={mes} onChange={setMes} />}
+        inline={<PfPeriodFilter value={period} onChange={setPeriod} onClear={() => setPeriod(pfCurrentMonthPeriod())} />}
         more={<>
           <PfSelect value={fCat} onChange={e => setFCat(e.target.value)} placeholder="Todas as categorias" options={catsAtivas.map(c => ({ value: c.id, label: c.nome }))} />
           <PfSelect value={fConta} onChange={e => setFConta(e.target.value)} placeholder="Todas as contas" options={accounts.map(a => ({ value: a.id, label: a.nome }))} />
@@ -151,11 +151,11 @@ export default function TxManager({ tipo, title, accent, cats, statusOptions, tr
           fCat && { label: `Categoria: ${catNome(fCat)}`, onRemove: () => setFCat('') },
           fConta && { label: `Conta: ${contaNome(fConta)}`, onRemove: () => setFConta('') },
           fCartao && { label: `Cartão: ${cards.find(c => c.id === fCartao)?.name || ''}`, onRemove: () => setFCartao('') },
-          (mes && mes !== mesAtual) && { label: `Período: ${mesLabel(mes)}`, onRemove: () => setMes(mesAtual) },
+          periodChanged && { label: `Período: ${period.label}`, onRemove: () => setPeriod(pfCurrentMonthPeriod()) },
           fStatus && { label: `Status: ${statusChips.find(s => s.value === fStatus)?.label || fStatus}`, onRemove: () => setFStatus('') },
         ]}
-        onClear={(busca || fCat || fConta || fCartao || fStatus || mes !== mesAtual)
-          ? () => { setBusca(''); setFCat(''); setFConta(''); setFCartao(''); setFStatus(''); setMes(mesAtual) }
+        onClear={(busca || fCat || fConta || fCartao || fStatus || periodChanged)
+          ? () => { setBusca(''); setFCat(''); setFConta(''); setFCartao(''); setFStatus(''); setPeriod(pfCurrentMonthPeriod()) }
           : null}
       />
 

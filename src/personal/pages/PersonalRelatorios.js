@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx'
 import { ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell } from 'recharts'
 import { T, fmt, fmtS, fd } from '../../theme'
 import { Card, Btn, EmptyState } from '../../components/ui'
-import { PageHeader, PfFilterBar, PfRangePeriod } from '../pfui'
+import { PageHeader, PfFilterBar, PfPeriodFilter, pfCurrentMonthPeriod } from '../pfui'
 import { tipoContaLabel, investTypeLabel, statusDividaInfo, statusMetaInfo } from '../../personalData'
 
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
@@ -16,15 +16,11 @@ function porCategoria(txs, tipo, cats) {
 }
 
 export default function PersonalRelatorios({ transactions, accounts, investments, debts, goals, catsReceita = [], catsDespesa = [] }) {
-  const mesAtual = new Date().toISOString().slice(0, 7)
-  const [de, setDe] = useState(mesAtual)
-  const [ate, setAte] = useState(mesAtual)
+  const [period, setPeriod] = useState(() => pfCurrentMonthPeriod())
 
-  const noPeriodo = useMemo(() => {
-    const ini = de <= ate ? de : ate
-    const fim = de <= ate ? ate : de
-    return transactions.filter(t => { const comp = (t.data || '').slice(0, 7); return comp >= ini && comp <= fim })
-  }, [transactions, de, ate])
+  const noPeriodo = useMemo(() =>
+    transactions.filter(t => { const d = t.data || ''; return d >= period.from && d <= period.to })
+  , [transactions, period])
 
   const rec = useMemo(() => noPeriodo.filter(t => t.tipo === 'receita').reduce((s, t) => s + (t.valor || 0), 0), [noPeriodo])
   const desp = useMemo(() => noPeriodo.filter(t => t.tipo === 'despesa').reduce((s, t) => s + (t.valor || 0), 0), [noPeriodo])
@@ -68,11 +64,7 @@ export default function PersonalRelatorios({ transactions, accounts, investments
   )
 
   const contaNome = (id) => accounts.find(a => a.id === id)?.nome || ''
-  const periodoLabel = () => {
-    const f = (m) => { const [y, mo] = m.split('-'); return `${MESES[+mo - 1]}/${y}` }
-    const ini = de <= ate ? de : ate, fim = de <= ate ? ate : de
-    return ini === fim ? f(ini) : `${f(ini)} a ${f(fim)}`
-  }
+  const periodoLabel = () => period.label
 
   const exportExcel = () => {
     const wb = XLSX.utils.book_new()
@@ -107,7 +99,7 @@ export default function PersonalRelatorios({ transactions, accounts, investments
       ...recCat.map(c => ['Receita', c.nome, c.valor]),
       ...despCat.map(c => ['Despesa', c.nome, c.valor]),
     ]), 'Categorias')
-    XLSX.writeFile(wb, `relatorio_pessoal_${de}_${ate}.xlsx`)
+    XLSX.writeFile(wb, `relatorio_pessoal_${period.from}_${period.to}.xlsx`)
   }
 
   const exportPDF = () => {
@@ -155,7 +147,7 @@ td{padding:6px 9px;border-bottom:1px solid #f3f4f6}.ftr{padding:14px 32px;text-a
           <Btn variant="ghost" icon="📊" onClick={exportExcel}>Excel</Btn>
         </div>} />
 
-      <PfFilterBar inline={<PfRangePeriod de={de} ate={ate} onChange={(d, a) => { setDe(d); setAte(a) }} />} />
+      <PfFilterBar inline={<PfPeriodFilter value={period} onChange={setPeriod} />} />
 
       {/* Resumo */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginBottom: 18 }}>

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { T, fmt, errMsgAcao } from '../../theme'
 import { Card, Btn, Toast, EmptyState, Badge } from '../../components/ui'
-import { PageHeader } from '../pfui'
+import { PageHeader, PfPeriodFilter } from '../pfui'
 
 const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 
@@ -38,7 +38,8 @@ export default function PersonalFechamento({ transactions = [], accounts = [], i
     setSaving(false)
   }
 
-  const inputStyle = { background: 'var(--card)', border: `1.5px solid var(--border)`, borderRadius: 8, padding: '9px 12px', color: 'var(--text)', fontSize: 14, outline: 'none', fontFamily: 'inherit' }
+  // Fechamento é por mês: o picker seleciona um período e usamos o mês da data inicial.
+  const periodValue = { from: `${mes}-01`, to: `${mes}-${String(new Date(ano, mesNum, 0).getDate()).padStart(2, '0')}`, label: `${MESES[mesNum - 1]} / ${ano}`, kind: 'mes' }
   const Kpi = ({ label, value, cor }) => (
     <Card style={{ padding: '16px 20px' }}><div style={{ fontSize: 12, color: T.sub }}>{label}</div><div style={{ fontWeight: 800, fontSize: 20, color: cor || T.text, marginTop: 4 }}>{value}</div></Card>
   )
@@ -49,7 +50,7 @@ export default function PersonalFechamento({ transactions = [], accounts = [], i
 
       <PageHeader title="Fechamento mensal" subtitle={`Consolidação do mês — ${MESES[mesNum - 1]}/${ano}.`}
         right={<div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <input type="month" value={mes} onChange={e => setMes(e.target.value)} style={inputStyle} />
+          <PfPeriodFilter value={periodValue} onChange={p => setMes(p.from.slice(0, 7))} />
           {jaFechado
             ? <Badge label="✓ Fechado" color={T.green} bg={T.greenL} />
             : <Btn onClick={registrar} disabled={saving}>{saving ? 'Registrando…' : 'Registrar fechamento'}</Btn>}
