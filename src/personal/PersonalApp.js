@@ -16,6 +16,7 @@ import {
   getPersonalTransfers, savePersonalTransfer, deletePersonalTransfer,
   getPersonalBudgets, savePersonalBudget, deletePersonalBudget,
   getCardInvoices, payCardInvoice, getMonthlyClosings, savePersonalClosing,
+  getDashboardPreferences, saveDashboardPreferences,
 } from '../personalSupabase'
 import { CATS_RECEITA_PF, CATS_DESPESA_PF } from '../personalData'
 import PersonalSidebar from './PersonalSidebar'
@@ -51,6 +52,7 @@ export default function PersonalApp({ usuario, profile, perfilFoto, onLogout }) 
   const [budgets, setBudgets] = useState([])
   const [cardInvoices, setCardInvoices] = useState([])
   const [closings, setClosings] = useState([])
+  const [dashboardPrefs, setDashboardPrefs] = useState(null)
   const [loading, setLoading] = useState(true)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('norvo_pf_sidebar') === '1')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -64,20 +66,22 @@ export default function PersonalApp({ usuario, profile, perfilFoto, onLogout }) 
   useEffect(() => {
     let alive = true
     const safe = (p) => p.catch(() => [])
+    const safeObj = (p) => p.catch(() => null)
     ;(async () => {
       try {
         try { await generateDueRecurrences(usuario.id) } catch (e) { /* recorrência é best-effort */ }
-        const [accs, txs, crds, invs, dbts, gls, cats, snaps, recs, trs, buds, cinv, clos] = await Promise.all([
+        const [accs, txs, crds, invs, dbts, gls, cats, snaps, recs, trs, buds, cinv, clos, prefs] = await Promise.all([
           getPersonalAccounts(), getPersonalTransactions(), getPersonalCards(),
           getPersonalInvestments(), getPersonalDebts(), getPersonalGoals(),
           getPersonalCategories(), getNetWorthSnapshots(),
           safe(getPersonalRecurrences()), safe(getPersonalTransfers()), safe(getPersonalBudgets()),
-          safe(getCardInvoices()), safe(getMonthlyClosings()),
+          safe(getCardInvoices()), safe(getMonthlyClosings()), safeObj(getDashboardPreferences()),
         ])
         if (!alive) return
         setAccounts(accs); setTransactions(txs); setCards(crds); setInvestments(invs)
         setDebts(dbts); setGoals(gls); setCategories(cats); setSnapshots(snaps)
         setRecurrences(recs); setTransfers(trs); setBudgets(buds); setCardInvoices(cinv); setClosings(clos)
+        setDashboardPrefs(prefs)
         try {
           const accountsTotal = accs.reduce((s, a) => s + (a.saldoAtual || 0), 0)
           const investTotal = invs.reduce((s, i) => s + (i.current || 0), 0)
@@ -209,6 +213,12 @@ export default function PersonalApp({ usuario, profile, perfilFoto, onLogout }) 
     const clos = await getMonthlyClosings(); setClosings(clos)
   }, [usuario])
 
+  // Personalização do Dashboard: persiste os widgets visíveis por usuário.
+  const onSaveDashboardPrefs = useCallback(async (widgets) => {
+    await saveDashboardPreferences(widgets, usuario.id)
+    setDashboardPrefs(widgets)
+  }, [usuario])
+
   // Categorias efetivas = padrão (fixas) + personalizadas. `active` controla o dropdown;
   // a resolução de nome/cor usa todas (mantém registros antigos legíveis mesmo se inativadas).
   const catsReceita = useMemo(() => {
@@ -225,13 +235,13 @@ export default function PersonalApp({ usuario, profile, perfilFoto, onLogout }) 
   const shared = {
     usuario, profile, accounts, transactions, cards, investments, debts, goals,
     categories, snapshots, catsReceita, catsDespesa,
-    recurrences, transfers, budgets, cardInvoices, closings,
+    recurrences, transfers, budgets, cardInvoices, closings, dashboardPrefs,
     onSaveTx, onSaveTxBatch, onDeleteTx, onSaveAccount, onDeleteAccount,
     onSaveCard, onDeleteCard, onSaveInvestment, onDeleteInvestment,
     onSaveDebt, onDeleteDebt, onSaveGoal, onDeleteGoal,
     onSaveCategory, onDeleteCategory,
     onSaveRecurrence, onDeleteRecurrence, onSaveTransfer, onDeleteTransfer,
-    onSaveBudget, onDeleteBudget, onPayInvoice, onSaveClosing, setPage,
+    onSaveBudget, onDeleteBudget, onPayInvoice, onSaveClosing, onSaveDashboardPrefs, setPage,
   }
 
   const renderPage = () => {

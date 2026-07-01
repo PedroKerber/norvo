@@ -74,6 +74,31 @@ body.dark .pf-scope {
 /* Título de página */
 .pf-h1 { font-weight: 800; font-size: 27px; margin: 0; color: var(--text); letter-spacing: -0.02em; }
 
+/* ── Painel de personalização do Dashboard ─────────────────────────────────── */
+/* Switch premium (on/off) */
+.pf-switch { position: relative; display: inline-block; width: 40px; height: 23px; flex-shrink: 0; }
+.pf-switch input { opacity: 0; width: 0; height: 0; }
+.pf-switch .pf-slider { position: absolute; inset: 0; cursor: pointer; background: var(--border); border-radius: 999px; transition: background .18s ease; }
+.pf-switch .pf-slider::before {
+  content: ''; position: absolute; height: 17px; width: 17px; left: 3px; top: 3px;
+  background: #fff; border-radius: 50%; transition: transform .18s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+.pf-switch input:checked + .pf-slider { background: var(--pf-orange); }
+.pf-switch input:checked + .pf-slider::before { transform: translateX(17px); }
+
+/* Linha de opção (label + switch) */
+.pf-cfg-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 11px 14px; margin-bottom: 8px; cursor: pointer;
+  border: 1px solid var(--border); border-radius: 11px; background: var(--card);
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.pf-cfg-row:hover { border-color: var(--pf-orange); box-shadow: var(--shadow); }
+
+/* Título de grupo dentro do painel */
+.pf-cfg-group { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--pf-orange); margin: 18px 0 9px; }
+.pf-cfg-group:first-child { margin-top: 0; }
+
 @media (max-width: 768px) {
   .pf-h1 { font-size: 22px !important; }
 }

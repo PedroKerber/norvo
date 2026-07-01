@@ -64,6 +64,20 @@ export const MetricCard = ({ icon, label, value, delta, deltaLabel, sub, gradien
   )
 }
 
+// Switch premium (on/off) — usado no painel de personalização do Dashboard
+export const PfSwitch = ({ checked, onChange, label, hint }) => (
+  <label className="pf-cfg-row">
+    <span style={{ minWidth: 0 }}>
+      <span style={{ fontSize: 14, color: 'var(--text)', fontWeight: 600 }}>{label}</span>
+      {hint && <span style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginTop: 1 }}>{hint}</span>}
+    </span>
+    <span className="pf-switch">
+      <input type="checkbox" checked={!!checked} onChange={e => onChange(e.target.checked)} />
+      <span className="pf-slider" />
+    </span>
+  </label>
+)
+
 // Card de seção (título + conteúdo) com estilo premium
 export const SectionCard = ({ title, right, children, style = {}, bodyStyle = {} }) => (
   <div className="pf-card" style={{ padding: 20, ...style }}>

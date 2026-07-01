@@ -384,3 +384,22 @@ export const savePersonalClosing = async (c, userId) => {
   const { error } = await supabase.from('personal_monthly_closings').upsert(row, { onConflict: 'user_id,year,month' })
   if (error) throw error
 }
+
+// ── Preferências do Dashboard (widgets visíveis) ────────────────────────────
+// 1 linha por usuário (unique user_id). Retorna o objeto de widgets ou null
+// (null = nunca configurou ⇒ Dashboard mostra o padrão completo).
+export const getDashboardPreferences = async () => {
+  const { data, error } = await supabase
+    .from('personal_dashboard_preferences')
+    .select('visible_widgets')
+    .maybeSingle()
+  if (error) throw error
+  return data?.visible_widgets || null
+}
+export const saveDashboardPreferences = async (visibleWidgets, userId) => {
+  const row = { user_id: userId, visible_widgets: visibleWidgets || {} }
+  const { error } = await supabase
+    .from('personal_dashboard_preferences')
+    .upsert(row, { onConflict: 'user_id' })
+  if (error) throw error
+}
