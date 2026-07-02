@@ -403,3 +403,69 @@ export const saveDashboardPreferences = async (visibleWidgets, userId) => {
     .upsert(row, { onConflict: 'user_id' })
   if (error) throw error
 }
+
+// ── Família / Espaço financeiro PF (Fase 1) ─────────────────────────────────
+// Estrutura de compartilhamento familiar. Nenhuma tabela financeira usa space_id
+// ainda (isso é a Fase 2); aqui só criamos/gerenciamos o espaço e seus membros.
+const mapSpace = (s) => ({ id: s.id, name: s.name || 'Meu financeiro', type: s.type || 'individual', ownerId: s.owner_user_id })
+
+// Retorna o espaço do usuário (dono); cria um individual se ainda não existir.
+export const getOrCreatePersonalSpace = async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  const { data, error } = await supabase
+    .from('personal_spaces').select('*').eq('owner_user_id', user.id).maybeSingle()
+  if (error) throw error
+  if (data) return mapSpace(data)
+  const { data: created, error: insErr } = await supabase
+    .from('personal_spaces')
+    .insert({ owner_user_id: user.id, name: 'Meu financeiro', type: 'individual' })
+    .select('*').single()
+  if (insErr) throw insErr
+  return mapSpace(created)
+}
+
+export const updatePersonalSpace = async (id, { name, type }) => {
+  const patch = {}
+  if (name != null) patch.name = name
+  if (type != null) patch.type = type
+  const { error } = await supabase.from('personal_spaces').update(patch).eq('id', id)
+  if (error) throw error
+}
+
+const mapMember = (m) => ({
+  id: m.id, email: m.email, role: m.role || 'viewer', status: m.status || 'pending',
+  userId: m.user_id || null, invitedAt: m.invited_at, acceptedAt: m.accepted_at,
+})
+export const getSpaceMembers = async (spaceId) => {
+  const { data, error } = await supabase
+    .from('personal_space_members').select('*')
+    .eq('space_id', spaceId).neq('status', 'removed')
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return (data || []).map(mapMember)
+}
+
+export const inviteSpaceMember = async ({ spaceId, email, role }) => {
+  const { data: { user } } = await supabase.auth.getUser()
+  const row = {
+    space_id: spaceId, email: String(email).toLowerCase().trim(), role: role || 'viewer',
+    status: 'pending', invited_by: user.id, invited_at: new Date().toISOString(),
+  }
+  const { data, error } = await supabase
+    .from('personal_space_members').upsert(row, { onConflict: 'space_id,email' })
+    .select('*').single()
+  if (error) throw error
+  return mapMember(data)
+}
+
+export const updateSpaceMemberRole = async (id, role) => {
+  const { error } = await supabase.from('personal_space_members').update({ role }).eq('id', id)
+  if (error) throw error
+}
+
+// Remoção lógica (mantém histórico; status = removed some da listagem).
+export const removeSpaceMember = async (id) => {
+  const { error } = await supabase.from('personal_space_members').update({ status: 'removed' }).eq('id', id)
+  if (error) throw error
+}

@@ -36,6 +36,7 @@ import PersonalOrcamento from './pages/PersonalOrcamento'
 import PersonalFechamento from './pages/PersonalFechamento'
 import PersonalRecorrentes from './pages/PersonalRecorrentes'
 import PersonalImportar from './pages/PersonalImportar'
+import PersonalFamilia from './pages/PersonalFamilia'
 
 export default function PersonalApp({ usuario, profile, perfilFoto, onLogout }) {
   const isMobile = useMobile()
@@ -265,6 +266,7 @@ export default function PersonalApp({ usuario, profile, perfilFoto, onLogout }) 
       case 'recorrentes':   return <PersonalRecorrentes {...shared} />
       case 'importar':      return <PersonalImportar {...shared} />
       case 'categorias':    return <PersonalCategorias {...shared} />
+      case 'familia':       return <PersonalFamilia {...shared} />
       case 'relatorios':    return <PersonalRelatorios {...shared} />
       default:              return <PersonalDashboard {...shared} />
     }
