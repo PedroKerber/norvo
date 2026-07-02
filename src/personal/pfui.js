@@ -128,6 +128,7 @@ const Nsel = ({ value, onChange, options }) => (
 
 export const PfPeriodFilter = ({ value, onChange, onClear, forward = false }) => {
   const [open, setOpen] = useState(false)
+  const [pos, setPos] = useState(null)
   const ref = useRef(null)
   const now = new Date()
   const curY = now.getFullYear(), curM = now.getMonth() + 1, curD = now.getDate()
@@ -141,12 +142,32 @@ export const PfPeriodFilter = ({ value, onChange, onClear, forward = false }) =>
   }
   const [draft, setDraft] = useState(() => fromValue(value))
 
+  // Posiciona o painel via position:fixed (escapa de overflow:hidden do container)
+  // e clampa na viewport: abre para a esquerda quando o botão está perto da borda direita.
   useEffect(() => {
-    if (!open) return
+    if (!open) { setPos(null); return }
+    const place = () => {
+      const el = ref.current; if (!el) return
+      const r = el.getBoundingClientRect()
+      const vw = window.innerWidth, vh = window.innerHeight
+      const width = Math.min(320, vw - 16)
+      let left = r.left
+      if (left + width > vw - 8) left = r.right - width   // alinha à direita perto da borda
+      if (left < 8) left = 8                               // nunca sai pela esquerda
+      const estH = 380
+      let top = r.bottom + 8
+      if (top + estH > vh - 8 && r.top - estH - 8 > 8) top = r.top - estH - 8 // abre p/ cima se faltar espaço
+      setPos({ left, top, width })
+    }
+    place()
     const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
     const onKey = (e) => { if (e.key === 'Escape') setOpen(false) }
     document.addEventListener('mousedown', onDoc); document.addEventListener('keydown', onKey)
-    return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onKey) }
+    window.addEventListener('resize', place); window.addEventListener('scroll', place, true)
+    return () => {
+      document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onKey)
+      window.removeEventListener('resize', place); window.removeEventListener('scroll', place, true)
+    }
   }, [open])
 
   const yearOpts = []; for (let y = curY + 1; y >= curY - 8; y--) yearOpts.push({ v: y, label: String(y) })
@@ -198,7 +219,7 @@ export const PfPeriodFilter = ({ value, onChange, onClear, forward = false }) =>
         <span className="pf-pf-caret" aria-hidden>▾</span>
       </button>
       {open && (
-        <div className="pf-pf-panel">
+        <div className="pf-pf-panel" style={pos ? { position: 'fixed', left: pos.left, top: pos.top, width: pos.width } : { visibility: 'hidden' }}>
           <div className="pf-pf-chips">
             {chips.map(c => (
               <button key={c.label} type="button"

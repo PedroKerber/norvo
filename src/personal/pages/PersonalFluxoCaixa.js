@@ -124,9 +124,10 @@ export default function PersonalFluxoCaixa({
     })
     debts.filter(d => d.status !== 'quitada' && d.dueDate && d.dueDate >= todayStr && (new Date(d.dueDate) - hoje) / 86400000 <= 30)
       .forEach(d => a.push({ tipo: 'info', icon: '📉', msg: `Dívida com ${d.creditor} vence em ${fd(d.dueDate)}.` }))
+    if (accounts.length === 0) a.push({ tipo: 'info', icon: '🏦', msg: 'Cadastre uma conta para melhorar o cálculo do saldo atual.' })
     if (a.length === 0) a.push({ tipo: 'success', icon: '✅', msg: 'Seu fluxo de caixa está positivo no período. Continue assim!' })
     return a
-  }, [events, negDay, cards, debts, todayStr]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [events, negDay, cards, debts, accounts, todayStr]) // eslint-disable-line react-hooks/exhaustive-deps
   const alertaBg = { danger: T.redL, warn: T.orangeL, info: T.blueL, success: T.greenL }
   const alertaCor = { danger: T.red, warn: PT.orange, info: T.blue, success: PT.green }
 
@@ -151,7 +152,6 @@ export default function PersonalFluxoCaixa({
   }, [events, from, to, saldoAtual])
 
   const tooltipStyle = { background: T.white, border: `1px solid ${T.border}`, borderRadius: 10, fontSize: 12, boxShadow: T.shadowMd }
-  const temContas = accounts.length > 0
 
   const tipoBadge = (e) => {
     if (e.kind === 'transferencia') return <Badge label="Transferência" color={T.blue} bg={T.blueL} />
@@ -160,7 +160,7 @@ export default function PersonalFluxoCaixa({
 
   return (
     <div>
-      <PageHeader title="Fluxo de Caixa" subtitle="Veja o que entra, o que sai e como fica o seu saldo previsto."
+      <PageHeader title="Fluxo de Caixa" subtitle="Suas entradas, saídas e o saldo previsto no período selecionado."
         right={<PfPeriodFilter value={period} onChange={setPeriod} forward onClear={() => setPeriod(pfCurrentMonthPeriod())} />} />
 
       {/* Cards de resumo */}
@@ -187,10 +187,14 @@ export default function PersonalFluxoCaixa({
         </div>
       )}
 
-      {!temContas ? (
+      {events.length === 0 ? (
         <div className="pf-card" style={{ padding: 0 }}>
-          <EmptyState icon="🏦" title="Cadastre uma conta para começar" sub="O fluxo de caixa usa o saldo das suas contas e seus lançamentos."
-            action={<button className="pf-btn" onClick={() => setPage && setPage('contas')}>+ Cadastrar conta</button>} />
+          <EmptyState icon="🗓️" title="Nenhuma movimentação encontrada neste período"
+            sub="Selecione outro período ou registre um lançamento para acompanhar seu fluxo de caixa."
+            action={<div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+              <button className="pf-btn" onClick={() => setPage && setPage('receitas')}>+ Cadastrar receita</button>
+              <button className="pf-btn pf-btn-ghost" onClick={() => setPage && setPage('despesas')}>+ Cadastrar despesa</button>
+            </div>} />
         </div>
       ) : (
         <>

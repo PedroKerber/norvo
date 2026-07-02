@@ -209,10 +209,11 @@ body.dark .pf-period-input { color-scheme: dark; }
 .pf-pf-caret { color: var(--text-muted); font-size: 11px; }
 
 .pf-pf-panel {
-  position: absolute; z-index: 60; top: calc(100% + 8px); left: 0;
-  width: 320px; max-width: 92vw; background: var(--card);
-  border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-lg);
-  padding: 14px;
+  position: fixed; z-index: 1200;
+  width: 320px; max-width: calc(100vw - 16px); max-height: min(80vh, 560px); overflow-y: auto;
+  background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+  box-shadow: var(--shadow-lg); padding: 14px;
+  -webkit-overflow-scrolling: touch;
 }
 .pf-pf-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .pf-pf-tabs {
@@ -265,5 +266,4 @@ body.dark .pf-period-input { color-scheme: dark; }
   .pf-seg { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
   .pf-pf, .pf-pf-trigger { width: 100%; }
   .pf-pf-trigger { justify-content: space-between; }
-  .pf-pf-panel { width: 100%; left: 0; right: 0; }
 }
