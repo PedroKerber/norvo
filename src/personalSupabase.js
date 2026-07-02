@@ -410,19 +410,24 @@ export const saveDashboardPreferences = async (visibleWidgets, userId) => {
 const mapSpace = (s) => ({ id: s.id, name: s.name || 'Meu financeiro', type: s.type || 'individual', ownerId: s.owner_user_id })
 
 // Retorna o espaço do usuário (dono); cria um individual se ainda não existir.
+// Obs.: NÃO usamos .insert().select() aqui — sob a RLS auto-referente, a leitura
+// no RETURNING pode não enxergar a linha recém-criada. Inserimos e relemos numa
+// query separada (transação nova), que já enxerga a linha corretamente.
 export const getOrCreatePersonalSpace = async () => {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('personal_spaces').select('*').eq('owner_user_id', user.id).maybeSingle()
   if (error) throw error
   if (data) return mapSpace(data)
-  const { data: created, error: insErr } = await supabase
+  const { error: insErr } = await supabase
     .from('personal_spaces')
     .insert({ owner_user_id: user.id, name: 'Meu financeiro', type: 'individual' })
-    .select('*').single()
-  if (insErr) throw insErr
-  return mapSpace(created)
+  if (insErr && insErr.code !== '23505') throw insErr // ignora corrida (unique owner_user_id)
+  const reread = await supabase
+    .from('personal_spaces').select('*').eq('owner_user_id', user.id).maybeSingle()
+  if (reread.error) throw reread.error
+  return reread.data ? mapSpace(reread.data) : null
 }
 
 export const updatePersonalSpace = async (id, { name, type }) => {
